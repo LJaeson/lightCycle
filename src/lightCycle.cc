@@ -14,8 +14,17 @@ public:
         for (int x = 0; x < w; x++) {
             for (int y = 0; y < h; y++) {
                 grid[x][y] = {{x,y}, TileColor::NOPE};
-
             }
+        }
+
+        for (int x = 0; x < w; x++) {
+            grid[x][0].changeTileColor(TileColor::BOUNDARY);
+            grid[x][h-1].changeTileColor(TileColor::BOUNDARY);
+        }
+
+        for (int y = 0; y < h; y++) {
+            grid[0][y].changeTileColor(TileColor::BOUNDARY);
+            grid[w-1][y].changeTileColor(TileColor::BOUNDARY);
         }
     }
 
@@ -135,10 +144,11 @@ public:
 
     //tick
     void tick() {
+        tickQueue.executeTick();
+
         tickQueue.addTask([this]{moveActor_();});
         tickQueue.addTask([this]{checkDeath_();});
         tickQueue.addTask([this]{modifyTile_();});
-
 
         //change direction must after those
     }
@@ -160,6 +170,7 @@ public:
     void checkDeath_() {
         if (!p1.isDead(map) && !p2.isDead(map)) {
             //keep game play
+                std::cout<<"1";
             return;
         } else {
             bool t1 = p1.isDead(map);
@@ -167,10 +178,16 @@ public:
 
             if (t1 && t2) {
                 //draw
+                std::cout<<"1";
+                exit(0);
             } else if (t1) {
                 //p2 win
+                std::cout<<"1";
+                exit(0);
             } else if (t2) {
                 //p1 win
+                std::cout<<"1";
+                exit(0);
             }
         }
 
@@ -194,7 +211,62 @@ public:
 int main() {
     std::cout << "hello world";
 
-    Game game = Game(10, 10, Location{2, 0}, Location{7, 0});
+    sf::RenderWindow window(sf::VideoMode({800, 600}), "Light Cycle");
+    window.setFramerateLimit(60);
+
+    Game game(10, 10, Location{2, 0}, Location{7,0});
+
+    sf::Clock clock;
+    double accumulator = 0.0;
+    const double TICK_STEP = 500.0;
+
+//////////////
+//     sf::Clock clock;
+// float accumulator = 0.f;
+// const float TICK_STEP = 0.1f;  // the refresh rate is 0.1s
+
+// while (window.isOpen()) {
+//     float delta = clock.restart().asSeconds();
+//     accumulator += delta;
+
+//     while (accumulator >= TICK_STEP) {
+//         game.tick();           // can take time
+//         accumulator -= TICK_STEP;
+//     }
+
+//     window.clear();
+//     window.display();
+// }
+/////////////////
+
+    while (window.isOpen())
+    {
+        // check all the window's events that were triggered since the last iteration of the loop
+        while (const std::optional event = window.pollEvent())
+        {
+            // close the window
+            if (event->is<sf::Event::Closed>()) {
+                window.close();
+                // std::cout << "hello world"; 
+            }
+        }
+
+        float delta = clock.restart().asMilliseconds();
+        accumulator += delta;
+
+        while (accumulator >= TICK_STEP) {
+            game.tick();
+            accumulator -= TICK_STEP;
+        }
+
+        window.clear();
+        window.display();
+
+
+
+    }
+
+    // Game game = Game(10, 10, Location{2, 0}, Location{7, 0});
 
 
     return 0;

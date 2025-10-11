@@ -272,10 +272,10 @@ public:
 int main() {
     // std::cout << "hello world";
 
-    sf::RenderWindow window(sf::VideoMode({1200, 1200}), "Light Cycle");
+    sf::RenderWindow window(sf::VideoMode({1200, 800}), "Light Cycle");
     window.setFramerateLimit(60);
 
-    Game game(300, 300, Location{15, 0}, Location{285,0});
+    Game game(300, 200, Location{15, 0}, Location{285,0});
 
     sf::Clock clock;
     double accumulator = 0.0;

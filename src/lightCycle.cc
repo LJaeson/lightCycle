@@ -30,16 +30,42 @@ public:
 
     //function
 
+    //draw render function
+    void draw(sf::RenderWindow& window, int tileSize) {
+        sf::RectangleShape rect(sf::Vector2f(tileSize, tileSize));
+
+        for (int w = 0; w < grid.size(); w++) {
+            for (int h = 0; h < grid[w].size(); h++) {
+                Tile& tile = grid[w][h];
+                sf::Color color;  
+
+                switch (tile.tileColor) {
+                    case TileColor::BLUE:        color = sf::Color(0,190,172);  break;
+                    case TileColor::GREEN:       color = sf::Color(132,178,42); break;
+                    case TileColor::BOUNDARY:    color = sf::Color(219,0,0);    break;
+                    case TileColor::NOPE:        color = sf::Color(0,0,0);      break;
+                    case TileColor::GREENACTOR:  color = sf::Color(65,114,0);   break;
+                    case TileColor::BLUEACTOR:   color = sf::Color(97,138,180); break;
+                    default:                     color = sf::Color(0,0,0);      break;
+                }
+                
+                rect.setFillColor(color);
+                rect.setPosition(sf::Vector2f(w * tileSize, h * tileSize));
+                window.draw(rect);
+            }
+        }
+    }
+
     //getter
     MapTypes::Grid getMap() const {
         return grid;
     }
 
-    Tile getTile(int w, int h) {
+    Tile& getTile(int w, int h) {
         return grid[w][h];
     }
 
-    Tile getTile(Location l) {
+    Tile& getTile(Location l) {
         return grid[l.w][l.h];
     }
 
@@ -67,7 +93,7 @@ public:
     }
 
     //function
-    bool isDead(Map map) {
+    bool isDead(Map& map) {
         if (map.getTile(position.location).tileColor != TileColor::NOPE) {
             return true;
         }
@@ -75,16 +101,21 @@ public:
         return false;
     }
 
-    void changeTileBehind(Map map) {
+    void changeTileBehind(Map& map) {
         map.getTile(position.findPreLocation()).changeTileColor(actorColor);
 
     }
+
+
 
     //accessor
     void doNextLocation() {
         position.doNextLocation();
     }
 
+    void changeDirection(Direction d) {
+        position.changeDirection(d);
+    }
 
 };
 
@@ -96,6 +127,7 @@ public:
     player(Location l, TileColor ac) : actor(l, ac) {}
 
     //function
+
     // void 
 
 };
@@ -144,13 +176,15 @@ public:
 
     //tick
     void tick() {
-        tickQueue.executeTick();
+
 
         tickQueue.addTask([this]{moveActor_();});
         tickQueue.addTask([this]{checkDeath_();});
         tickQueue.addTask([this]{modifyTile_();});
 
         //change direction must after those
+
+        tickQueue.executeTick();
     }
 
     //tickfunction
@@ -170,7 +204,7 @@ public:
     void checkDeath_() {
         if (!p1.isDead(map) && !p2.isDead(map)) {
             //keep game play
-                std::cout<<"1";
+                // std::cout<<"1";
             return;
         } else {
             bool t1 = p1.isDead(map);
@@ -182,11 +216,11 @@ public:
                 exit(0);
             } else if (t1) {
                 //p2 win
-                std::cout<<"1";
+                // std::cout<<"1";
                 exit(0);
             } else if (t2) {
                 //p1 win
-                std::cout<<"1";
+                // std::cout<<"1";
                 exit(0);
             }
         }
@@ -196,6 +230,23 @@ public:
     //function
     void userInput() {
 
+    }
+
+    void draw(sf::RenderWindow& window, int tileSize) {
+        map.draw(window, tileSize);
+    }
+
+    //accessor
+    Map& getMap(){
+        return map;
+    }
+
+    player& getPlayer1() {
+        return p1;
+    }
+
+    player& getPlayer2() {
+        return p2;
     }
     
 };
@@ -209,35 +260,17 @@ public:
 // }
 
 int main() {
-    std::cout << "hello world";
+    // std::cout << "hello world";
 
-    sf::RenderWindow window(sf::VideoMode({800, 600}), "Light Cycle");
+    sf::RenderWindow window(sf::VideoMode({800, 800}), "Light Cycle");
     window.setFramerateLimit(60);
 
-    Game game(10, 10, Location{2, 0}, Location{7,0});
+    Game game(100, 100, Location{2, 0}, Location{97,0});
 
     sf::Clock clock;
     double accumulator = 0.0;
-    const double TICK_STEP = 500.0;
+    const double TICK_STEP = 1000.0;
 
-//////////////
-//     sf::Clock clock;
-// float accumulator = 0.f;
-// const float TICK_STEP = 0.1f;  // the refresh rate is 0.1s
-
-// while (window.isOpen()) {
-//     float delta = clock.restart().asSeconds();
-//     accumulator += delta;
-
-//     while (accumulator >= TICK_STEP) {
-//         game.tick();           // can take time
-//         accumulator -= TICK_STEP;
-//     }
-
-//     window.clear();
-//     window.display();
-// }
-/////////////////
 
     while (window.isOpen())
     {
@@ -249,6 +282,42 @@ int main() {
                 window.close();
                 // std::cout << "hello world"; 
             }
+
+            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+
+                 switch (keyPressed->scancode) {
+                // --- Player 1 (Arrow Keys)
+                case sf::Keyboard::Scan::Up:
+                    game.getPlayer1().changeDirection(Direction::UP);
+                    break;
+                case sf::Keyboard::Scan::Left:
+                    game.getPlayer1().changeDirection(Direction::LEFT);
+                    break;
+                case sf::Keyboard::Scan::Down:
+                    game.getPlayer1().changeDirection(Direction::DOWN);
+                    break;
+                case sf::Keyboard::Scan::Right:
+                    game.getPlayer1().changeDirection(Direction::RIGHT);
+                    break;
+
+                // --- Player 2 (WASD)
+                case sf::Keyboard::Scan::W:
+                    game.getPlayer2().changeDirection(Direction::UP);
+                    break;
+                case sf::Keyboard::Scan::A:
+                    game.getPlayer2().changeDirection(Direction::LEFT);
+                    break;
+                case sf::Keyboard::Scan::S:
+                    game.getPlayer2().changeDirection(Direction::DOWN);
+                    break;
+                case sf::Keyboard::Scan::D:
+                    game.getPlayer2().changeDirection(Direction::RIGHT);
+                    break;
+
+                default:
+                    break;
+                }
+            }
         }
 
         float delta = clock.restart().asMilliseconds();
@@ -257,9 +326,26 @@ int main() {
         while (accumulator >= TICK_STEP) {
             game.tick();
             accumulator -= TICK_STEP;
+            
         }
 
+        if (window.hasFocus()) {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)) game.getPlayer1().changeDirection(Direction::UP);
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)) game.getPlayer1().changeDirection(Direction::LEFT);
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) game.getPlayer1().changeDirection(Direction::DOWN);
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) game.getPlayer1().changeDirection(Direction::RIGHT);
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) game.getPlayer2().changeDirection(Direction::UP);
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) game.getPlayer2().changeDirection(Direction::LEFT);
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) game.getPlayer2().changeDirection(Direction::DOWN);
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) game.getPlayer2().changeDirection(Direction::RIGHT);
+        }
+
+
+
         window.clear();
+        //render
+        game.draw(window, 4);
         window.display();
 
 

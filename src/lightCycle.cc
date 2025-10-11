@@ -1,7 +1,5 @@
 #include <lightCycle/lightCycle.hh>
 
-
-
 //Map class
 class Map {
 private:
@@ -164,7 +162,7 @@ protected:
 
     Map map;
 
-    bool runkillSwitch = true;
+    int terminateCode = 0;
 
 public:
     //constructor to init the game
@@ -202,7 +200,6 @@ public:
     void checkDeath_() {
         if (!p1.isDead(map) && !p2.isDead(map)) {
             //keep game play
-                // std::cout<<"1";
             return;
         } else {
             bool t1 = p1.isDead(map);
@@ -211,17 +208,18 @@ public:
             if (t1 && t2) {
                 //draw
                 std::cout<<"Draw";
-                exit(0);
+                terminateCode = 1;
+                // exit(0);
             } else if (t1) {
                 //p2 win
                 std::cout<<"p2 win";
-                // std::cout<<"1";
-                exit(0);
+                terminateCode = 2;
+                // exit(0);
             } else if (t2) {
                 //p1 win
                 std::cout<<"p1 win";
-                // std::cout<<"1";
-                exit(0);
+                terminateCode = 3;
+                // exit(0);
             }
         }
 
@@ -245,31 +243,41 @@ public:
         return p2;
     }
     
+    int getTerminateCode() {
+        return terminateCode;
+    }
 };
 
 
-int main() {
+int main(int argc, char* argv[]) {
     sf::RenderWindow window(sf::VideoMode({1200, 800}), "Light Cycle");
     window.setFramerateLimit(60);
 
     Game game(300, 200, Location{15, 0}, Location{285,0});
 
+    //clock, how fast the game goes
     sf::Clock clock;
-    double accumulator = 0.0;
-    const double TICK_STEP = 20.0;
+    double accumulator = 0.0;   //dont change
+    const double TICK_STEP = 20.0; //this means 0.02s per tick
 
-    while (window.isOpen())
-    {
-        while (const std::optional event = window.pollEvent())
-        {
+    //load font
+    std::filesystem::path exeDir = std::filesystem::absolute(argv[0]).parent_path();
+    sf::Font uiFont;
+    if (!uiFont.openFromFile((exeDir / "resources" / "MinecraftRegular.otf").string())) {
+        std::cerr << "Failed to load font\n";
+    }
+
+    while (window.isOpen()) {
+        while (const std::optional event = window.pollEvent()) {
             // close the window
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
 
+
             if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
 
-                 switch (keyPressed->scancode) {
+                switch (keyPressed->scancode) {
                 // --- Player 1 (WASD)
                 case sf::Keyboard::Scan::W:
                     game.getPlayer1().changeDirection(Direction::UP);
@@ -302,22 +310,46 @@ int main() {
                     break;
                 }
             }
+
         }
 
         float delta = clock.restart().asMilliseconds();
         accumulator += delta;
 
-        while (accumulator >= TICK_STEP) {
-            game.tick();
-            accumulator -= TICK_STEP;
-            
+
+        if (game.getTerminateCode() == 0) {
+            while (accumulator >= TICK_STEP) {
+                game.tick();
+                accumulator -= TICK_STEP;
+                
+            }
+
+            //render
+            window.clear();
+            game.draw(window, 4);
         }
 
-        window.clear();
-        //render
-        game.draw(window, 4);
+
+        //game over
+        else if (game.getTerminateCode() != 0) {
+
+            sf::Text text(uiFont);
+            text.setCharacterSize(50);
+            text.setFillColor(sf::Color::White);
+            text.setPosition(sf::Vector2f(200, 300));
+
+            switch (game.getTerminateCode()) {
+                case 1: text.setString("Draw! Press SPACE to restart"); break;
+                case 2: text.setString("Player 2 Wins! Press SPACE to restart"); break;
+                case 3: text.setString("Player 1 Wins! Press SPACE to restart"); break;
+            }
+
+            window.draw(text);
+        }
+
         window.display();
     }
+
 
     return 0;
 }

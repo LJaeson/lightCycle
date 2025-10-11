@@ -55,6 +55,10 @@ struct Position {
     }
 
     void changeDirection(Direction d) {
+        if (d == Direction::DOWN && direction == Direction::UP) return;
+        if (d == Direction::UP && direction == Direction::DOWN) return;
+        if (d == Direction::RIGHT && direction == Direction::LEFT) return;
+        if (d == Direction::LEFT && direction == Direction::RIGHT) return;
         direction = d;
     }
 

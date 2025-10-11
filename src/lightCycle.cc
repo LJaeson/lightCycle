@@ -79,17 +79,19 @@ class actor {
 private:
     Position position;
     TileColor actorColor;
+    TileColor tileColor;
 public:
     //constructor
 
-    actor(int w, int h, TileColor ac) {
-        position.initPosition(w, h);
-        actorColor = ac;
-    }
-
     actor(Location l, TileColor ac) {
         position.initPosition(l);
-        actorColor = ac;
+        tileColor = ac;
+
+        if (tileColor == TileColor::BLUE) {
+            actorColor = TileColor::BLUEACTOR;
+        } else if (tileColor == TileColor::GREEN) {
+            actorColor = TileColor::GREENACTOR;
+        }
     }
 
     //function
@@ -102,8 +104,12 @@ public:
     }
 
     void changeTileBehind(Map& map) {
-        map.getTile(position.findPreLocation()).changeTileColor(actorColor);
+        map.getTile(position.findPreLocation()).changeTileColor(tileColor);
 
+    }
+
+    void changeCurrentTile(Map& map) {
+        map.getTile(position.location).changeTileColor(actorColor);
     }
 
 
@@ -123,7 +129,7 @@ class player : public actor{
 private:
 public:
     //constructor
-    player(int w, int h, TileColor ac) : actor(w, h, ac) {}
+
     player(Location l, TileColor ac) : actor(l, ac) {}
 
     //function
@@ -192,6 +198,8 @@ public:
     void modifyTile_() {
         p1.changeTileBehind(map);
         p2.changeTileBehind(map);
+        p1.changeCurrentTile(map);
+        p2.changeCurrentTile(map);
 
     }
 
@@ -212,14 +220,16 @@ public:
 
             if (t1 && t2) {
                 //draw
-                std::cout<<"1";
+                std::cout<<"Draw";
                 exit(0);
             } else if (t1) {
                 //p2 win
+                std::cout<<"p2 win";
                 // std::cout<<"1";
                 exit(0);
             } else if (t2) {
                 //p1 win
+                std::cout<<"p1 win";
                 // std::cout<<"1";
                 exit(0);
             }
@@ -262,14 +272,14 @@ public:
 int main() {
     // std::cout << "hello world";
 
-    sf::RenderWindow window(sf::VideoMode({800, 800}), "Light Cycle");
+    sf::RenderWindow window(sf::VideoMode({1200, 1200}), "Light Cycle");
     window.setFramerateLimit(60);
 
-    Game game(100, 100, Location{2, 0}, Location{97,0});
+    Game game(300, 300, Location{15, 0}, Location{285,0});
 
     sf::Clock clock;
     double accumulator = 0.0;
-    const double TICK_STEP = 1000.0;
+    const double TICK_STEP = 20.0;
 
 
     while (window.isOpen())
@@ -286,31 +296,31 @@ int main() {
             if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
 
                  switch (keyPressed->scancode) {
-                // --- Player 1 (Arrow Keys)
-                case sf::Keyboard::Scan::Up:
+                // --- Player 1 (WASD)
+                case sf::Keyboard::Scan::W:
                     game.getPlayer1().changeDirection(Direction::UP);
                     break;
-                case sf::Keyboard::Scan::Left:
+                case sf::Keyboard::Scan::A:
                     game.getPlayer1().changeDirection(Direction::LEFT);
                     break;
-                case sf::Keyboard::Scan::Down:
+                case sf::Keyboard::Scan::S:
                     game.getPlayer1().changeDirection(Direction::DOWN);
                     break;
-                case sf::Keyboard::Scan::Right:
+                case sf::Keyboard::Scan::D:
                     game.getPlayer1().changeDirection(Direction::RIGHT);
                     break;
 
-                // --- Player 2 (WASD)
-                case sf::Keyboard::Scan::W:
+                // --- Player 2 (Arrow Keys)
+                case sf::Keyboard::Scan::Up:
                     game.getPlayer2().changeDirection(Direction::UP);
                     break;
-                case sf::Keyboard::Scan::A:
+                case sf::Keyboard::Scan::Left:
                     game.getPlayer2().changeDirection(Direction::LEFT);
                     break;
-                case sf::Keyboard::Scan::S:
+                case sf::Keyboard::Scan::Down:
                     game.getPlayer2().changeDirection(Direction::DOWN);
                     break;
-                case sf::Keyboard::Scan::D:
+                case sf::Keyboard::Scan::Right:
                     game.getPlayer2().changeDirection(Direction::RIGHT);
                     break;
 
@@ -327,18 +337,6 @@ int main() {
             game.tick();
             accumulator -= TICK_STEP;
             
-        }
-
-        if (window.hasFocus()) {
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)) game.getPlayer1().changeDirection(Direction::UP);
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)) game.getPlayer1().changeDirection(Direction::LEFT);
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) game.getPlayer1().changeDirection(Direction::DOWN);
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) game.getPlayer1().changeDirection(Direction::RIGHT);
-
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) game.getPlayer2().changeDirection(Direction::UP);
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) game.getPlayer2().changeDirection(Direction::LEFT);
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) game.getPlayer2().changeDirection(Direction::DOWN);
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) game.getPlayer2().changeDirection(Direction::RIGHT);
         }
 
 

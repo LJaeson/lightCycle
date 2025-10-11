@@ -69,8 +69,6 @@ public:
         return grid[l.w][l.h];
     }
 
-
-
 };
 
 
@@ -111,8 +109,6 @@ public:
     void changeCurrentTile(Map& map) {
         map.getTile(position.location).changeTileColor(actorColor);
     }
-
-
 
     //accessor
     void doNextLocation() {
@@ -157,8 +153,8 @@ public:
         }
     }
 };
-//game class, the big class that contain everything about game
 
+//game class, the big class that contain everything about game
 class Game {
 protected:
     taskQueue tickQueue;
@@ -169,7 +165,6 @@ protected:
     Map map;
 
     bool runkillSwitch = true;
-
 
 public:
     //constructor to init the game
@@ -182,19 +177,14 @@ public:
 
     //tick
     void tick() {
-
-
         tickQueue.addTask([this]{moveActor_();});
         tickQueue.addTask([this]{checkDeath_();});
         tickQueue.addTask([this]{modifyTile_();});
-
-        //change direction must after those
 
         tickQueue.executeTick();
     }
 
     //tickfunction
-
     void modifyTile_() {
         p1.changeTileBehind(map);
         p2.changeTileBehind(map);
@@ -238,10 +228,6 @@ public:
     }
 
     //function
-    void userInput() {
-
-    }
-
     void draw(sf::RenderWindow& window, int tileSize) {
         map.draw(window, tileSize);
     }
@@ -261,17 +247,8 @@ public:
     
 };
 
-// lightCycle::lightCycle(/* args */)
-// {
-// }
-
-// lightCycle::~lightCycle()
-// {
-// }
 
 int main() {
-    // std::cout << "hello world";
-
     sf::RenderWindow window(sf::VideoMode({1200, 800}), "Light Cycle");
     window.setFramerateLimit(60);
 
@@ -281,16 +258,13 @@ int main() {
     double accumulator = 0.0;
     const double TICK_STEP = 20.0;
 
-
     while (window.isOpen())
     {
-        // check all the window's events that were triggered since the last iteration of the loop
         while (const std::optional event = window.pollEvent())
         {
             // close the window
             if (event->is<sf::Event::Closed>()) {
                 window.close();
-                // std::cout << "hello world"; 
             }
 
             if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
@@ -339,19 +313,11 @@ int main() {
             
         }
 
-
-
         window.clear();
         //render
         game.draw(window, 4);
         window.display();
-
-
-
     }
-
-    // Game game = Game(10, 10, Location{2, 0}, Location{7, 0});
-
 
     return 0;
 }

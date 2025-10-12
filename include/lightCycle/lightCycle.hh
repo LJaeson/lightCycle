@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <filesystem>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 
@@ -33,6 +34,14 @@ enum Direction {
 struct Location {
     int w;
     int h;
+
+    int getW() {
+        return w;
+    }
+
+    int getH() {
+        return h;
+    }
 };
 
 int dw[4]  = {0, 1, 0, -1};

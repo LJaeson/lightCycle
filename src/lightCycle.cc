@@ -2,10 +2,37 @@
 
 
 
+//taskQueue
+class renderQueue {
+protected:
+
+    std::deque<Location> location_task_;
+public:
+    void addLocation(Location l) {
+        location_task_.push_front(l);
+    }
+
+    bool haveLocationTask() {
+        if(location_task_.empty()) {
+            return false;
+        }
+        return true;
+    }
+
+    Location getLocationQ() {
+        Location l = location_task_.back();
+        location_task_.pop_back();
+        return l;
+    }
+};
+
 //Map class
 class Map {
 private:
     MapTypes::Grid grid;
+
+    //for rending
+    renderQueue rq;
 public:
     //constructor
     Map(int w, int h) {
@@ -31,7 +58,7 @@ public:
     //function
 
     //draw render function
-    void draw(sf::RenderWindow& window, int tileSize) {
+    void draw(sf::RenderTarget& window, int tileSize) {
         sf::RectangleShape rect(sf::Vector2f(tileSize, tileSize));
 
         for (int w = 0; w < grid.size(); w++) {
@@ -40,10 +67,10 @@ public:
                 sf::Color color;  
 
                 switch (tile.tileColor) {
+                    case TileColor::NOPE:        color = sf::Color(0,0,0);      break;
                     case TileColor::BLUE:        color = sf::Color(0,190,172);  break;
                     case TileColor::GREEN:       color = sf::Color(132,178,42); break;
                     case TileColor::BOUNDARY:    color = sf::Color(219,0,0);    break;
-                    case TileColor::NOPE:        color = sf::Color(0,0,0);      break;
                     case TileColor::GREENACTOR:  color = sf::Color(65,114,0);   break;
                     case TileColor::BLUEACTOR:   color = sf::Color(97,138,180); break;
                     default:                     color = sf::Color(0,0,0);      break;
@@ -54,6 +81,32 @@ public:
                 window.draw(rect);
             }
         }
+    }
+
+    //only draw one tile
+    void drawPart(sf::RenderTarget& window, int tileSize, Location location) {
+        sf::RectangleShape rect(sf::Vector2f(tileSize, tileSize));
+
+        int w = location.getW();
+        int h = location.getH();
+
+        Tile& tile = grid[w][h];
+        sf::Color color;  
+
+        switch (tile.tileColor) {
+            case TileColor::NOPE:        color = sf::Color(0,0,0);      break;
+            case TileColor::BLUE:        color = sf::Color(0,190,172);  break;
+            case TileColor::GREEN:       color = sf::Color(132,178,42); break;
+            case TileColor::BOUNDARY:    color = sf::Color(219,0,0);    break;
+            case TileColor::GREENACTOR:  color = sf::Color(65,114,0);   break;
+            case TileColor::BLUEACTOR:   color = sf::Color(97,138,180); break;
+            default:                     color = sf::Color(0,0,0);      break;
+        }
+        
+        rect.setFillColor(color);
+        rect.setPosition(sf::Vector2f(w * tileSize, h * tileSize));
+        window.draw(rect);
+
     }
 
     //getter
@@ -69,7 +122,17 @@ public:
         return grid[l.w][l.h];
     }
 
+    void addLocation(Location l) {
+        rq.addLocation(l);
+    }
 
+    bool haveLocationTask() {
+        return rq.haveLocationTask();
+    }
+
+    Location getLocationQ() {
+        return rq.getLocationQ();
+    }
 
 };
 
@@ -106,13 +169,14 @@ public:
     void changeTileBehind(Map& map) {
         map.getTile(position.findPreLocation()).changeTileColor(tileColor);
 
+        map.addLocation(position.findPreLocation());
     }
 
     void changeCurrentTile(Map& map) {
         map.getTile(position.location).changeTileColor(actorColor);
+
+        map.addLocation(position.location);
     }
-
-
 
     //accessor
     void doNextLocation() {
@@ -144,6 +208,7 @@ protected:
     using Task = std::function<void()>;
 
     std::deque<Task> task_;
+    std::deque<Location> location_task_;
 public:
     void addTask(Task fn) {
         task_.push_front(fn);
@@ -156,9 +221,26 @@ public:
             fn();
         }
     }
-};
-//game class, the big class that contain everything about game
 
+    void addLocation(Location l) {
+        location_task_.push_front(l);
+    }
+
+    bool haveLocationTask() {
+        if(location_task_.empty()) {
+            return false;
+        }
+        return true;
+    }
+
+    Location getLocationQ() {
+        Location l = location_task_.back();
+        location_task_.pop_back();
+        return l;
+    }
+};
+
+//game class, the big class that contain everything about game
 class Game {
 protected:
     taskQueue tickQueue;
@@ -168,8 +250,7 @@ protected:
 
     Map map;
 
-    bool runkillSwitch = true;
-
+    int terminateCode = 0;
 
 public:
     //constructor to init the game
@@ -182,19 +263,14 @@ public:
 
     //tick
     void tick() {
-
-
         tickQueue.addTask([this]{moveActor_();});
         tickQueue.addTask([this]{checkDeath_();});
         tickQueue.addTask([this]{modifyTile_();});
-
-        //change direction must after those
 
         tickQueue.executeTick();
     }
 
     //tickfunction
-
     void modifyTile_() {
         p1.changeTileBehind(map);
         p2.changeTileBehind(map);
@@ -208,11 +284,9 @@ public:
         p2.doNextLocation();
     }
 
-//TODO
     void checkDeath_() {
         if (!p1.isDead(map) && !p2.isDead(map)) {
             //keep game play
-                // std::cout<<"1";
             return;
         } else {
             bool t1 = p1.isDead(map);
@@ -221,29 +295,30 @@ public:
             if (t1 && t2) {
                 //draw
                 std::cout<<"Draw";
-                exit(0);
+                terminateCode = 1;
+                // exit(0);
             } else if (t1) {
                 //p2 win
                 std::cout<<"p2 win";
-                // std::cout<<"1";
-                exit(0);
+                terminateCode = 2;
+                // exit(0);
             } else if (t2) {
                 //p1 win
                 std::cout<<"p1 win";
-                // std::cout<<"1";
-                exit(0);
+                terminateCode = 3;
+                // exit(0);
             }
         }
 
     }
 
     //function
-    void userInput() {
-
+    void draw(sf::RenderTarget& window, int tileSize) {
+        map.draw(window, tileSize);
     }
 
-    void draw(sf::RenderWindow& window, int tileSize) {
-        map.draw(window, tileSize);
+    void drawPart(sf::RenderTarget& window, int tileSize, Location l) {
+        map.drawPart(window, tileSize, l);
     }
 
     //accessor
@@ -259,43 +334,58 @@ public:
         return p2;
     }
     
+    int getTerminateCode() {
+        return terminateCode;
+    }
+
+    bool haveLocationTask() {
+        return map.haveLocationTask();
+    }
+
+    Location getLocationQ() {
+        return map.getLocationQ();
+    }
 };
 
-// lightCycle::lightCycle(/* args */)
-// {
-// }
 
-// lightCycle::~lightCycle()
-// {
-// }
-
-int main() {
-    // std::cout << "hello world";
-
-    sf::RenderWindow window(sf::VideoMode({1200, 800}), "Light Cycle");
+int main(int argc, char* argv[]) {
+    const int W = 450;
+    const int H = 250;
+    const int RenderBlockSize = 3;
+    sf::RenderWindow window(sf::VideoMode({RenderBlockSize * W, RenderBlockSize * H}), "Light Cycle");
     window.setFramerateLimit(60);
 
-    Game game(300, 200, Location{15, 0}, Location{285,0});
+    Game game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5,0});
 
+    sf::RenderTexture canvas({RenderBlockSize * W, RenderBlockSize * H});
+
+    canvas.clear();
+    game.draw(canvas, RenderBlockSize);
+    canvas.display();
+
+    //load font
+    std::filesystem::path exeDir = std::filesystem::absolute(argv[0]).parent_path();
+    sf::Font uiFont;
+    if (!uiFont.openFromFile((exeDir / "resources" / "MinecraftRegular.otf").string())) {
+        std::cerr << "Failed to load font\n";
+    }
+
+    //clock, how fast the game goes
     sf::Clock clock;
-    double accumulator = 0.0;
-    const double TICK_STEP = 20.0;
+    double accumulator = 0.0;   //dont change
+    const double TICK_STEP = 13.0; //this means 0.02s per tick
 
-
-    while (window.isOpen())
-    {
-        // check all the window's events that were triggered since the last iteration of the loop
-        while (const std::optional event = window.pollEvent())
-        {
+    while (window.isOpen()) {
+        while (const std::optional event = window.pollEvent()) {
             // close the window
             if (event->is<sf::Event::Closed>()) {
                 window.close();
-                // std::cout << "hello world"; 
             }
+
 
             if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
 
-                 switch (keyPressed->scancode) {
+                switch (keyPressed->scancode) {
                 // --- Player 1 (WASD)
                 case sf::Keyboard::Scan::W:
                     game.getPlayer1().changeDirection(Direction::UP);
@@ -324,33 +414,79 @@ int main() {
                     game.getPlayer2().changeDirection(Direction::RIGHT);
                     break;
 
+                //restart the game
+                case sf::Keyboard::Scan::Space:
+                    if (game.getTerminateCode() != 0) {
+                        game = Game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5,0}); 
+
+                        clock.restart();    // reset game timer
+                        accumulator = 0.0;  // reset tick timing
+                        std::cout << "Game restarted" << std::endl;
+
+                        canvas.clear();
+                        game.draw(canvas, RenderBlockSize);
+                        canvas.display();
+                    }
+                    break;
+
                 default:
                     break;
                 }
             }
         }
 
+        //game tick and graphic handle
         float delta = clock.restart().asMilliseconds();
         accumulator += delta;
 
-        while (accumulator >= TICK_STEP) {
-            game.tick();
-            accumulator -= TICK_STEP;
-            
+        if (game.getTerminateCode() == 0) {
+            while (accumulator >= TICK_STEP) {
+                game.tick();
+                accumulator -= TICK_STEP;
+
+                while (game.haveLocationTask()) {
+                    game.drawPart(canvas, RenderBlockSize, game.getLocationQ());
+                }
+                canvas.display();
+            }
+
         }
 
-
-
         window.clear();
-        //render
-        game.draw(window, 4);
+        sf::Sprite frame(canvas.getTexture());
+        window.draw(frame);
+
+
+        //game over
+        if (game.getTerminateCode() != 0) {
+
+            sf::Text text(uiFont);
+            text.setCharacterSize(50);
+            text.setFillColor(sf::Color::White);
+
+            switch (game.getTerminateCode()) {
+                case 1: text.setString("Draw! Press SPACE to restart"); break;
+                case 2: text.setString("Player 2 Wins! Press SPACE to restart"); break;
+                case 3: text.setString("Player 1 Wins! Press SPACE to restart"); break;
+            }
+
+            //central the text
+            sf::FloatRect bounds = text.getLocalBounds();
+            text.setOrigin(
+                {bounds.position.x + bounds.size.x / 2.f,
+                bounds.position.y + bounds.size.y / 2.f}
+            );
+            auto size = window.getSize();
+            text.setPosition(
+                {static_cast<float>(size.x) / 2.f,
+                static_cast<float>(size.y) / 2.f}
+            );
+
+            window.draw(text);
+        }
+
         window.display();
-
-
-
     }
-
-    // Game game = Game(10, 10, Location{2, 0}, Location{7, 0});
 
 
     return 0;

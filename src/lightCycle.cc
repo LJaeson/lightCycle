@@ -58,7 +58,7 @@ public:
     //function
 
     //draw render function
-    void draw(sf::RenderWindow& window, int tileSize) {
+    void draw(sf::RenderTarget& window, int tileSize) {
         sf::RectangleShape rect(sf::Vector2f(tileSize, tileSize));
 
         for (int w = 0; w < grid.size(); w++) {
@@ -84,7 +84,7 @@ public:
     }
 
     //only draw one tile
-    void drawPart(sf::RenderWindow& window, int tileSize, Location location) {
+    void drawPart(sf::RenderTarget& window, int tileSize, Location location) {
         sf::RectangleShape rect(sf::Vector2f(tileSize, tileSize));
 
         int w = location.getW();
@@ -313,11 +313,11 @@ public:
     }
 
     //function
-    void draw(sf::RenderWindow& window, int tileSize) {
+    void draw(sf::RenderTarget& window, int tileSize) {
         map.draw(window, tileSize);
     }
 
-    void drawPart(sf::RenderWindow& window, int tileSize, Location l) {
+    void drawPart(sf::RenderTarget& window, int tileSize, Location l) {
         map.drawPart(window, tileSize, l);
     }
 
@@ -349,15 +349,19 @@ public:
 
 
 int main(int argc, char* argv[]) {
-    sf::RenderWindow window(sf::VideoMode({1200, 900}), "Light Cycle");
-    window.setFramerateLimit(50);
+    const int W = 450;
+    const int H = 250;
+    const int RenderBlockSize = 3;
+    sf::RenderWindow window(sf::VideoMode({RenderBlockSize * W, RenderBlockSize * H}), "Light Cycle");
+    window.setFramerateLimit(60);
 
-    Game game(400, 300, Location{15, 0}, Location{285,0});
+    Game game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5,0});
 
-    //clock, how fast the game goes
-    sf::Clock clock;
-    double accumulator = 0.0;   //dont change
-    const double TICK_STEP = 10.0; //this means 0.02s per tick
+    sf::RenderTexture canvas({RenderBlockSize * W, RenderBlockSize * H});
+
+    canvas.clear();
+    game.draw(canvas, RenderBlockSize);
+    canvas.display();
 
     //load font
     std::filesystem::path exeDir = std::filesystem::absolute(argv[0]).parent_path();
@@ -366,8 +370,10 @@ int main(int argc, char* argv[]) {
         std::cerr << "Failed to load font\n";
     }
 
-    game.draw(window, 3);
-    window.display();
+    //clock, how fast the game goes
+    sf::Clock clock;
+    double accumulator = 0.0;   //dont change
+    const double TICK_STEP = 13.0; //this means 0.02s per tick
 
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
@@ -411,10 +417,15 @@ int main(int argc, char* argv[]) {
                 //restart the game
                 case sf::Keyboard::Scan::Space:
                     if (game.getTerminateCode() != 0) {
-                        game = Game(300, 200, Location{15, 1}, Location{285, 1});  
+                        game = Game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5,0}); 
+
                         clock.restart();    // reset game timer
                         accumulator = 0.0;  // reset tick timing
-                        std::cout << "Game restarted!" << std::endl;
+                        std::cout << "Game restarted" << std::endl;
+
+                        canvas.clear();
+                        game.draw(canvas, RenderBlockSize);
+                        canvas.display();
                     }
                     break;
 
@@ -422,12 +433,11 @@ int main(int argc, char* argv[]) {
                     break;
                 }
             }
-
         }
 
+        //game tick and graphic handle
         float delta = clock.restart().asMilliseconds();
         accumulator += delta;
-
 
         if (game.getTerminateCode() == 0) {
             while (accumulator >= TICK_STEP) {
@@ -435,30 +445,42 @@ int main(int argc, char* argv[]) {
                 accumulator -= TICK_STEP;
 
                 while (game.haveLocationTask()) {
-                    game.drawPart(window, 3, game.getLocationQ());
+                    game.drawPart(canvas, RenderBlockSize, game.getLocationQ());
                 }
+                canvas.display();
             }
-
-            //render
-            // game.draw(window, 3);
-
 
         }
 
+        window.clear();
+        sf::Sprite frame(canvas.getTexture());
+        window.draw(frame);
+
 
         //game over
-        else if (game.getTerminateCode() != 0) {
+        if (game.getTerminateCode() != 0) {
 
             sf::Text text(uiFont);
             text.setCharacterSize(50);
             text.setFillColor(sf::Color::White);
-            text.setPosition(sf::Vector2f(200, 300));
 
             switch (game.getTerminateCode()) {
                 case 1: text.setString("Draw! Press SPACE to restart"); break;
                 case 2: text.setString("Player 2 Wins! Press SPACE to restart"); break;
                 case 3: text.setString("Player 1 Wins! Press SPACE to restart"); break;
             }
+
+            //central the text
+            sf::FloatRect bounds = text.getLocalBounds();
+            text.setOrigin(
+                {bounds.position.x + bounds.size.x / 2.f,
+                bounds.position.y + bounds.size.y / 2.f}
+            );
+            auto size = window.getSize();
+            text.setPosition(
+                {static_cast<float>(size.x) / 2.f,
+                static_cast<float>(size.y) / 2.f}
+            );
 
             window.draw(text);
         }

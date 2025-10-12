@@ -1,9 +1,38 @@
 #include <lightCycle/lightCycle.hh>
 
+
+
+//taskQueue
+class renderQueue {
+protected:
+
+    std::deque<Location> location_task_;
+public:
+    void addLocation(Location l) {
+        location_task_.push_front(l);
+    }
+
+    bool haveLocationTask() {
+        if(location_task_.empty()) {
+            return false;
+        }
+        return true;
+    }
+
+    Location getLocationQ() {
+        Location l = location_task_.back();
+        location_task_.pop_back();
+        return l;
+    }
+};
+
 //Map class
 class Map {
 private:
     MapTypes::Grid grid;
+
+    //for rending
+    renderQueue rq;
 public:
     //constructor
     Map(int w, int h) {
@@ -38,10 +67,10 @@ public:
                 sf::Color color;  
 
                 switch (tile.tileColor) {
+                    case TileColor::NOPE:        color = sf::Color(0,0,0);      break;
                     case TileColor::BLUE:        color = sf::Color(0,190,172);  break;
                     case TileColor::GREEN:       color = sf::Color(132,178,42); break;
                     case TileColor::BOUNDARY:    color = sf::Color(219,0,0);    break;
-                    case TileColor::NOPE:        color = sf::Color(0,0,0);      break;
                     case TileColor::GREENACTOR:  color = sf::Color(65,114,0);   break;
                     case TileColor::BLUEACTOR:   color = sf::Color(97,138,180); break;
                     default:                     color = sf::Color(0,0,0);      break;
@@ -52,6 +81,32 @@ public:
                 window.draw(rect);
             }
         }
+    }
+
+    //only draw one tile
+    void drawPart(sf::RenderWindow& window, int tileSize, Location location) {
+        sf::RectangleShape rect(sf::Vector2f(tileSize, tileSize));
+
+        int w = location.getW();
+        int h = location.getH();
+
+        Tile& tile = grid[w][h];
+        sf::Color color;  
+
+        switch (tile.tileColor) {
+            case TileColor::NOPE:        color = sf::Color(0,0,0);      break;
+            case TileColor::BLUE:        color = sf::Color(0,190,172);  break;
+            case TileColor::GREEN:       color = sf::Color(132,178,42); break;
+            case TileColor::BOUNDARY:    color = sf::Color(219,0,0);    break;
+            case TileColor::GREENACTOR:  color = sf::Color(65,114,0);   break;
+            case TileColor::BLUEACTOR:   color = sf::Color(97,138,180); break;
+            default:                     color = sf::Color(0,0,0);      break;
+        }
+        
+        rect.setFillColor(color);
+        rect.setPosition(sf::Vector2f(w * tileSize, h * tileSize));
+        window.draw(rect);
+
     }
 
     //getter
@@ -65,6 +120,18 @@ public:
 
     Tile& getTile(Location l) {
         return grid[l.w][l.h];
+    }
+
+    void addLocation(Location l) {
+        rq.addLocation(l);
+    }
+
+    bool haveLocationTask() {
+        return rq.haveLocationTask();
+    }
+
+    Location getLocationQ() {
+        return rq.getLocationQ();
     }
 
 };
@@ -102,10 +169,13 @@ public:
     void changeTileBehind(Map& map) {
         map.getTile(position.findPreLocation()).changeTileColor(tileColor);
 
+        map.addLocation(position.findPreLocation());
     }
 
     void changeCurrentTile(Map& map) {
         map.getTile(position.location).changeTileColor(actorColor);
+
+        map.addLocation(position.location);
     }
 
     //accessor
@@ -138,6 +208,7 @@ protected:
     using Task = std::function<void()>;
 
     std::deque<Task> task_;
+    std::deque<Location> location_task_;
 public:
     void addTask(Task fn) {
         task_.push_front(fn);
@@ -149,6 +220,23 @@ public:
             task_.pop_back();
             fn();
         }
+    }
+
+    void addLocation(Location l) {
+        location_task_.push_front(l);
+    }
+
+    bool haveLocationTask() {
+        if(location_task_.empty()) {
+            return false;
+        }
+        return true;
+    }
+
+    Location getLocationQ() {
+        Location l = location_task_.back();
+        location_task_.pop_back();
+        return l;
     }
 };
 
@@ -196,7 +284,6 @@ public:
         p2.doNextLocation();
     }
 
-//TODO
     void checkDeath_() {
         if (!p1.isDead(map) && !p2.isDead(map)) {
             //keep game play
@@ -230,6 +317,10 @@ public:
         map.draw(window, tileSize);
     }
 
+    void drawPart(sf::RenderWindow& window, int tileSize, Location l) {
+        map.drawPart(window, tileSize, l);
+    }
+
     //accessor
     Map& getMap(){
         return map;
@@ -246,19 +337,27 @@ public:
     int getTerminateCode() {
         return terminateCode;
     }
+
+    bool haveLocationTask() {
+        return map.haveLocationTask();
+    }
+
+    Location getLocationQ() {
+        return map.getLocationQ();
+    }
 };
 
 
 int main(int argc, char* argv[]) {
-    sf::RenderWindow window(sf::VideoMode({1200, 800}), "Light Cycle");
-    window.setFramerateLimit(60);
+    sf::RenderWindow window(sf::VideoMode({1200, 900}), "Light Cycle");
+    window.setFramerateLimit(50);
 
-    Game game(300, 200, Location{15, 0}, Location{285,0});
+    Game game(400, 300, Location{15, 0}, Location{285,0});
 
     //clock, how fast the game goes
     sf::Clock clock;
     double accumulator = 0.0;   //dont change
-    const double TICK_STEP = 20.0; //this means 0.02s per tick
+    const double TICK_STEP = 10.0; //this means 0.02s per tick
 
     //load font
     std::filesystem::path exeDir = std::filesystem::absolute(argv[0]).parent_path();
@@ -266,6 +365,9 @@ int main(int argc, char* argv[]) {
     if (!uiFont.openFromFile((exeDir / "resources" / "MinecraftRegular.otf").string())) {
         std::cerr << "Failed to load font\n";
     }
+
+    game.draw(window, 3);
+    window.display();
 
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
@@ -306,6 +408,16 @@ int main(int argc, char* argv[]) {
                     game.getPlayer2().changeDirection(Direction::RIGHT);
                     break;
 
+                //restart the game
+                case sf::Keyboard::Scan::Space:
+                    if (game.getTerminateCode() != 0) {
+                        game = Game(300, 200, Location{15, 1}, Location{285, 1});  
+                        clock.restart();    // reset game timer
+                        accumulator = 0.0;  // reset tick timing
+                        std::cout << "Game restarted!" << std::endl;
+                    }
+                    break;
+
                 default:
                     break;
                 }
@@ -321,12 +433,16 @@ int main(int argc, char* argv[]) {
             while (accumulator >= TICK_STEP) {
                 game.tick();
                 accumulator -= TICK_STEP;
-                
+
+                while (game.haveLocationTask()) {
+                    game.drawPart(window, 3, game.getLocationQ());
+                }
             }
 
             //render
-            window.clear();
-            game.draw(window, 4);
+            // game.draw(window, 3);
+
+
         }
 
 

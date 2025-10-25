@@ -4,12 +4,27 @@ project(LightCycle LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(SFML 3 REQUIRED COMPONENTS Graphics Window Audio)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+include(FetchContent)
+FetchContent_Declare(SFML
+    GIT_REPOSITORY https://github.com/SFML/SFML.git
+    GIT_TAG 3.0.2
+    GIT_SHALLOW ON
+    EXCLUDE_FROM_ALL
+    SYSTEM)
+FetchContent_MakeAvailable(SFML)
+
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(light_cycle
-  src/lightCycle.cc
-  include/lightCycle/lightCycle.hh
+  src/lightCycle/lightCycle.cc
+  src/lightCycle/actor.cpp
+  src/lightCycle/Game.cpp
+  src/lightCycle/Map.cpp
 )
+
+target_compile_features(light_cycle PRIVATE cxx_std_17)
 
 target_link_libraries(light_cycle PRIVATE
   SFML::Graphics
@@ -19,10 +34,8 @@ target_link_libraries(light_cycle PRIVATE
 
 target_include_directories(light_cycle
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include
 )
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Where the exe goes (optional but neat)
 set_target_properties(light_cycle PROPERTIES

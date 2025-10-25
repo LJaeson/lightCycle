@@ -1,3 +1,4 @@
+#pragma once
 #include <stdio.h>
 #include <filesystem>
 #include <SFML/Window.hpp>
@@ -8,6 +9,8 @@
 #include <vector>
 #include <deque>
 
+#include <functional>
+
 
 enum TileColor {
     NOPE,
@@ -17,8 +20,6 @@ enum TileColor {
     GREENACTOR,
     BOUNDARY
 };
-
-
 
 //     1
 // 4       2
@@ -44,11 +45,11 @@ struct Location {
     }
 };
 
-int dw[4]  = {0, 1, 0, -1};
-int dh[4]  = {-1, 0, 1, 0};
-
 struct Position {
     Location location;
+
+    int dw[4]  = {0, 1, 0, -1};
+    int dh[4]  = {-1, 0, 1, 0};
 
     //0 <= direction <= 3. which is indicated as UP,RIGHT, DOWN, LEFT
     int direction;
@@ -85,7 +86,7 @@ struct Position {
 };
 
 //map
-struct Tile{
+struct Tile {
     Location location;
     TileColor tileColor;
 
@@ -98,5 +99,4 @@ struct Tile{
 namespace MapTypes {
     using Grid = std::vector<std::vector<Tile>>;
     
-
 }

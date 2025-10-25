@@ -22,6 +22,8 @@ add_executable(light_cycle
   src/lightCycle/actor.cpp
   src/lightCycle/Game.cpp
   src/lightCycle/Map.cpp
+  src/Player/GameState.cpp
+  src/Player/Bot.cpp
 )
 
 target_compile_features(light_cycle PRIVATE cxx_std_17)

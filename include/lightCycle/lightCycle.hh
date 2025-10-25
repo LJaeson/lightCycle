@@ -64,12 +64,13 @@ struct Position {
         direction = Direction::DOWN;
     }
 
-    void changeDirection(Direction d) {
-        if (d == Direction::DOWN && direction == Direction::UP) return;
-        if (d == Direction::UP && direction == Direction::DOWN) return;
-        if (d == Direction::RIGHT && direction == Direction::LEFT) return;
-        if (d == Direction::LEFT && direction == Direction::RIGHT) return;
+    bool changeDirection(Direction d) {
+        if (d == Direction::DOWN && direction == Direction::UP) return false;
+        if (d == Direction::UP && direction == Direction::DOWN) return false;
+        if (d == Direction::RIGHT && direction == Direction::LEFT) return false;
+        if (d == Direction::LEFT && direction == Direction::RIGHT) return false;
         direction = d;
+        return true;
     }
 
     Location findNextLocation() const {
@@ -83,6 +84,10 @@ struct Position {
     void doNextLocation() {
         location = findNextLocation();
     }
+
+    void doPreLocation() {
+        location = findPreLocation();
+    }
 };
 
 //map
@@ -92,11 +97,9 @@ struct Tile {
 
     void changeTileColor(TileColor ac) {
         tileColor = ac;
-
     }
 };
 
 namespace MapTypes {
     using Grid = std::vector<std::vector<Tile>>;
-    
 }

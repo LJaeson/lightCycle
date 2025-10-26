@@ -1,8 +1,10 @@
 #pragma once
 #include <lightCycle/lightCycle.hh>
+#include <lightCycle/Game.hpp>
 
 class Player {
     public:
+        virtual ~Player() = default;
         virtual Direction getMove(Game game, TileColor color1, TileColor color2, double timeLimit) = 0;
         virtual bool clientControlled() = 0;
 };

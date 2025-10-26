@@ -12,11 +12,7 @@ actor::actor(Location l, TileColor ac) {
 }
 
 bool actor::isDead(Map& map) {
-    if (map.getTile(position.location).tileColor != TileColor::NOPE) {
-        return true;
-    }
-
-    return false;
+    return map.getTile(position.location).tileColor != TileColor::NOPE;
 }
 
 void actor::changeTileBehind(Map& map) {
@@ -36,3 +32,10 @@ void actor::changeDirection(Direction d) {
     position.changeDirection(d);
 }
 
+const Position &actor::getPosition() const {
+    return position;
+}
+
+TileColor actor::getColor() const { 
+    return actorColor; 
+}

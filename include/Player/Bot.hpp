@@ -8,16 +8,18 @@ class Bot: public Player {
     public:
         Bot(int w, int h);
 
-        virtual bool clientControlled() override;
+        bool clientControlled() override;
 
-        virtual Direction getMove(Game game, TileColor color1, TileColor color2, double timeLimit) override;
+        Direction getMove(Game game, TileColor color1, TileColor color2, double timeLimit) override;
 
         bool botCanNotMove();
         bool oponentCanNotMove();
-        
+
         bool isTerminal();
 
-        double minimax(int depth, bool maximizingPlayer, sf::Clock &clock);
+        double minimax(int depth, bool maximizingPlayer, sf::Clock &clock, int &position);
 
         double evaluate();
+
+        bool exceedTimeLimit(sf::Clock &clock);
 };

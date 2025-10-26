@@ -25,9 +25,12 @@ public:
 
     void changeDirection(Direction d);
 
+    const Position &getPosition() const;
+
+    TileColor getColor() const;
 };
 
-class player : public actor{
+class player : public actor {
 private:
 public:
     //constructor
@@ -35,7 +38,9 @@ public:
     player(Location l, TileColor ac) : actor(l, ac) {}
 
     //function
-
+    bool equalLocation(const player &p) const {
+        return p.getPosition().location.equal(this->getPosition().location);
+    }
     // void 
 
 };

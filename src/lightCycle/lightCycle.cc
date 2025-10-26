@@ -5,11 +5,16 @@
 #include <lightCycle/Map.hpp>
 #include <lightCycle/Game.hpp>
 #include <functional>
+#include <future>
 
 class GameController {
     private:
         const unsigned int winW = 1000;
         const unsigned int winH = 800;
+
+        double accumulator = 0.0;   //dont change
+        const double TICK_STEP = 1200.0; //this means 0.02s per tick
+        const double BOT_LIMIT = 1000.0;
 
         const int H = 15;
         const int W = 15;
@@ -23,12 +28,12 @@ class GameController {
 
     public:
         GameController(std::string player1, std::string player2): 
-            game(H, W, Location{1, 1}, Location{W - 2, 1}),
+            game(W, H, Location{1, 1}, Location{W - 2, 1}),
             window(sf::VideoMode({winW, winH}), "Light Cycle")
         {
             window.setFramerateLimit(60);
-            this->player1 = PlayerFactory(player1);
-            this->player2 = PlayerFactory(player2);
+            this->player1 = PlayerFactory(player1, W, H);
+            this->player2 = PlayerFactory(player2, W, H);
         }
 
         void drawGame() {
@@ -125,12 +130,40 @@ class GameController {
             }
         }
 
+        void botPlaying() {
+            if (player1->clientControlled() && player2->clientControlled()) return;
+            sf::Clock clock;
+            std::future<Direction> fut1;
+            std::future<Direction> fut2;
+
+            if (!player1->clientControlled()) {
+                fut1 = std::async(std::launch::async, [this]() {
+                    return player1->getMove(game, game.getPlayer1().getColor(), game.getPlayer2().getColor(), BOT_LIMIT);
+                });
+            }
+
+            if (!player2->clientControlled()) {
+                fut2 = std::async(std::launch::async, [this]() {
+                    return player2->getMove(game, game.getPlayer2().getColor(), game.getPlayer1().getColor(), BOT_LIMIT);
+                });
+            }
+
+            if (!player1->clientControlled()) {
+                game.getPlayer1().changeDirection(fut1.get());
+                std::cout << "Bot 1 time: " << clock.getElapsedTime().asMilliseconds() << std::endl;
+            }
+            if (!player2->clientControlled()) {
+                game.getPlayer2().changeDirection(fut2.get());
+                std::cout << "Bot 2 time: " << clock.getElapsedTime().asMilliseconds() << std::endl;
+            }
+
+            std::cout << "Total time: " << clock.getElapsedTime().asMilliseconds() << std::endl;
+        }
+
         void gameLoop() {
             //clock, how fast the game goes
             sf::Clock clock;
-            double accumulator = 0.0;   //dont change
-            const double TICK_STEP = 1000.0; //this means 0.02s per tick
-
+            
             while (window.isOpen()) {
                 while (const std::optional event = window.pollEvent()) {
                     // close the window
@@ -151,8 +184,13 @@ class GameController {
 
                 if (game.getTerminateCode() == 0) {
                     while (accumulator >= TICK_STEP) {
+                        botPlaying();
+                        std::cout << "One tick\n";
                         game.tick();
                         accumulator -= TICK_STEP;
+                        if (game.getTerminateCode() != 0) {
+                            break;
+                        }
                     }
 
                 }
@@ -194,7 +232,7 @@ class GameController {
 
 int main(int argc, char* argv[]) {
 
-    GameController controller("Client", "Client");
+    GameController controller("Bot", "Bot");
 
     std::filesystem::path exeDir = std::filesystem::absolute(argv[0]).parent_path();
     std::string path = (exeDir / "resources" / "MinecraftRegular.otf").string();

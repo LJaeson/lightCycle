@@ -25,7 +25,7 @@ enum TileColor {
 // 4       2
 //     3
 enum Direction {
-    UP,
+    UP = 0,
     RIGHT,
     DOWN,
     LEFT
@@ -43,6 +43,10 @@ struct Location {
     int getH() {
         return h;
     }
+
+    bool equal(const Location &l) const {
+        return w == l.w && h == l.h;
+    }
 };
 
 struct Position {
@@ -52,7 +56,7 @@ struct Position {
     int dh[4]  = {-1, 0, 1, 0};
 
     //0 <= direction <= 3. which is indicated as UP,RIGHT, DOWN, LEFT
-    int direction;
+    Direction direction;
 
     void initPosition(int w, int h) {
         location = Location{w, h};
@@ -79,6 +83,10 @@ struct Position {
 
     Location findPreLocation() const {
         return Location{location.w - dw[direction], location.h - dh[direction]};
+    }
+
+    Location findNextLocationFromDirection(Direction d) {
+        return Location{location.w + dw[d], location.h + dh[d]};
     }
 
     void doNextLocation() {

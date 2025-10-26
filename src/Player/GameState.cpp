@@ -13,7 +13,7 @@ void GameState::copyGame(Game game, TileColor botColor, TileColor opColor) {
         for (int j = 0; j < h; ++j) {
             TileColor c = gameMap[i][j].tileColor;
             if (c == botColor) {
-                bot.initPosition(i, j);
+                bot.initPosition(i, j); 
             } else if (c == opColor) {
                 oponent.initPosition(i, j);
             } 
@@ -28,14 +28,16 @@ void GameState::copyGame(Game game, TileColor botColor, TileColor opColor) {
 }
 
 bool GameState::getCrashed(Location l) {
-    if (grid[l.w][l.h] == TileColor::BOUNDARY) return true;
-    return false; 
+    if (l.w < 0 || l.w >= w || l.h < 0 || l.h >= h) return true;
+    
+    return grid[l.w][l.h] == TileColor::BOUNDARY;
 }
 
 std::vector<Direction> GameState::getPossibleMove(Position &pos) {
     std::vector<Direction> moves;
+    // std::cout << pos.location.w << " " << pos.location.h << std::endl;
     for (int i = 0; i <= Direction::LEFT; ++i) {
-        if (pos.changeDirection((Direction) i) && !getCrashed(pos.findNextLocation())) {
+        if (!getCrashed(pos.findNextLocationFromDirection((Direction) i))) {
             moves.push_back((Direction) i);
         }
     }
@@ -43,13 +45,13 @@ std::vector<Direction> GameState::getPossibleMove(Position &pos) {
 }
 
 void GameState::move(Position &pos, Direction dir) {
-    pos.changeDirection(dir);
+    pos.direction = dir;
 
     Location l = pos.findNextLocation();
+
     grid[l.w][l.h] = TileColor::BOUNDARY;
 
     pos.doNextLocation();
-
     moveStack.push({&pos, dir});
 }
 
@@ -59,7 +61,7 @@ void GameState::unmove() {
     Position *pos = move.pos;
     Direction dir = move.dir;
 
-    pos->changeDirection(dir);
+    pos->direction = dir;
 
     Location l = pos->location;
     grid[l.w][l.h] = TileColor::NOPE;

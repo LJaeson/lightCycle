@@ -6,6 +6,8 @@
 #include <lightCycle/Game.hpp>
 #include <functional>
 #include <future>
+#include <cstdlib>
+#include <ctime>
 
 class GameController {
     private:
@@ -31,9 +33,43 @@ class GameController {
             game(W, H, Location{1, 1}, Location{W - 2, 1}),
             window(sf::VideoMode({winW, winH}), "Light Cycle")
         {
+            srand(time(0));
+            createRandomWall();
             window.setFramerateLimit(60);
             this->player1 = PlayerFactory(player1, W, H);
             this->player2 = PlayerFactory(player2, W, H);
+        }
+
+        void createRandomWall() {
+            int walkNo = random() % 11;
+            for (int i = 0; i < walkNo; ++i) {
+                int w = random() % (W - 4) + 2;
+                int h = random() % (H - 4) + 2;
+                int walkLen = random() % 8;
+                for (int j = 0; j < walkLen; ++j) {
+                    if (w < 0 || w >= W || h < 0 || h >= H) return;
+                    game.changeTileColor({w, h}, TileColor::BOUNDARY);
+                    game.changeTileColor({W - w - 1, h}, TileColor::BOUNDARY);
+
+                    int move = random() % 4;
+                    switch (move) {
+                    case 0:
+                        ++w;
+                        break;
+                    case 1:
+                        --w;
+                        break;
+                    case 2:
+                        ++h;
+                        break;
+                    case 3:
+                        --h;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            }
         }
 
         void drawGame() {
@@ -109,7 +145,7 @@ class GameController {
             case sf::Keyboard::Scan::Space:
                 if (game.getTerminateCode() != 0) {
                     game = Game(W, H, Location{1, 1}, Location{W - 2, 1}); 
-
+                    createRandomWall();
                     clock.restart();    // reset game timer
                     accumulator = 0.0;  // reset tick timing
                     std::cout << "Game restarted" << std::endl;

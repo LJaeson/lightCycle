@@ -89,4 +89,6 @@ public:
     // }
 
     MapTypes::Grid getMapGrid();
+
+    void changeTileColor(Location l, TileColor c);
 };

@@ -110,3 +110,7 @@ int Game::getTerminateCode() {
 MapTypes::Grid Game::getMapGrid() {
     return map.getMap();
 }
+
+void Game::changeTileColor(Location l, TileColor c) {
+    map.getTile(l).changeTileColor(c);
+}

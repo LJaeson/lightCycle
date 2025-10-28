@@ -10,7 +10,7 @@ class Bot: public Player {
 
         bool clientControlled() override;
 
-        Direction getMove(Game game, TileColor color1, TileColor color2, double timeLimit) override;
+        Direction getMove(const Game &game, TileColor color1, TileColor color2, double timeLimit) override;
 
         bool botCanNotMove();
         bool oponentCanNotMove();
@@ -22,4 +22,6 @@ class Bot: public Player {
         double evaluate();
 
         bool exceedTimeLimit(sf::Clock &clock);
+
+        bool isDraw();
 };

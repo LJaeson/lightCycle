@@ -1,16 +1,20 @@
 #include <Player/Bot.hpp>
 #include <limits>
 #include <algorithm>
+#include <cstdlib>
+#include <ctime>
 
-#define MAX_DEPTH 20
+#define MAX_DEPTH 10
 
-Bot::Bot(int w, int h): game(w, h) {}
+Bot::Bot(int w, int h): game(w, h) {
+    srand(time(0));
+}
 
 bool Bot::clientControlled() {
     return false;
 }
 
-Direction Bot::getMove(Game gameState, TileColor color1, TileColor color2, double timeLimit) {
+Direction Bot::getMove(const Game &gameState, TileColor color1, TileColor color2, double timeLimit) {
     sf::Clock clock;
     this->timeLimit = timeLimit;
     game.copyGame(gameState, color1, color2);
@@ -19,7 +23,7 @@ Direction Bot::getMove(Game gameState, TileColor color1, TileColor color2, doubl
     Direction bestMove = Direction::DOWN;
     double maxEval = -std::numeric_limits<double>::infinity();
     for (Direction dir: game.getPossibleMove(game.bot)) {
-        // std::cout << "get Move loop: " << dir << std::endl;
+        //std::cout << "get Move loop: " << dir << std::endl;
         if (exceedTimeLimit(clock)) {
             return bestMove;
         }
@@ -28,15 +32,18 @@ Direction Bot::getMove(Game gameState, TileColor color1, TileColor color2, doubl
         if (eval > maxEval) {
             maxEval = eval;
             bestMove = dir;
+        } else if (eval == maxEval && rand() % 2 == 1) {
+            bestMove = dir;
         }
         game.unmove();
     }
-    
+    std::cout << position << std::endl;
     return bestMove;
 }
 
 bool Bot::botCanNotMove() {
     return game.getPossibleMove(game.bot).empty();
+
 };
 
 bool Bot::oponentCanNotMove() {
@@ -44,7 +51,7 @@ bool Bot::oponentCanNotMove() {
 }
 
 bool Bot::isTerminal() {
-    return botCanNotMove() || oponentCanNotMove();
+    return isDraw() || game.getCrashed(game.bot.location) || game.getCrashed(game.oponent.location);
 };
 
 bool Bot::exceedTimeLimit(sf::Clock &clock) {
@@ -76,14 +83,20 @@ double Bot::minimax(int depth, bool maximizingPlayer, sf::Clock &clock, int &pos
     }
 }
 
+bool Bot::isDraw() {
+    return (game.getCrashed(game.bot.location) 
+           && game.getCrashed(game.oponent.location)) 
+           || game.bot.location.equal(game.oponent.location);
+}
+
 double Bot::evaluate() {
-    if (oponentCanNotMove() && botCanNotMove()) {
+    if (isDraw()) {
         return -50; // draw
-    } else if (botCanNotMove()) {
+    } else if (game.getCrashed(game.bot.location)) {
         return -100; // oponent win
-    } else if (oponentCanNotMove()) {
+    } else if (game.getCrashed(game.oponent.location)) {
         return 100;
     }
-
-    return 5 * game.getPossibleMove(game.bot).size();
+    return 50;
+    // return 5 * game.getPossibleMove(game.bot).size();
 }

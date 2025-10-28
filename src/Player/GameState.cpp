@@ -16,9 +16,7 @@ void GameState::copyGame(Game game, TileColor botColor, TileColor opColor) {
                 bot.initPosition(i, j); 
             } else if (c == opColor) {
                 oponent.initPosition(i, j);
-            } 
-            
-            if (c != TileColor::NOPE) {
+            } else if (c != TileColor::NOPE) {
                 grid[i][j] = TileColor::BOUNDARY;
             } else {
                 grid[i][j] = TileColor::NOPE;
@@ -37,9 +35,7 @@ std::vector<Direction> GameState::getPossibleMove(Position &pos) {
     std::vector<Direction> moves;
     // std::cout << pos.location.w << " " << pos.location.h << std::endl;
     for (int i = 0; i <= Direction::LEFT; ++i) {
-        if (!getCrashed(pos.findNextLocationFromDirection((Direction) i))) {
-            moves.push_back((Direction) i);
-        }
+        moves.push_back((Direction) i);
     }
     return moves;
 }
@@ -47,9 +43,7 @@ std::vector<Direction> GameState::getPossibleMove(Position &pos) {
 void GameState::move(Position &pos, Direction dir) {
     pos.direction = dir;
 
-    Location l = pos.findNextLocation();
-
-    grid[l.w][l.h] = TileColor::BOUNDARY;
+    grid[pos.location.w][pos.location.h] = TileColor::BOUNDARY;
 
     pos.doNextLocation();
     moveStack.push({&pos, dir});
@@ -63,10 +57,10 @@ void GameState::unmove() {
 
     pos->direction = dir;
 
+    pos->doPreLocation();
+    
     Location l = pos->location;
     grid[l.w][l.h] = TileColor::NOPE;
-
-    pos->doPreLocation();
 
     moveStack.pop();
 }

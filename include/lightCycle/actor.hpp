@@ -41,6 +41,5 @@ public:
     bool equalLocation(const player &p) const {
         return p.getPosition().location.equal(this->getPosition().location);
     }
-    // void 
-
+    // void
 };

@@ -13,8 +13,8 @@ class GameController {
         const unsigned int winH = 800;
 
         double accumulator = 0.0;   //dont change
-        const double TICK_STEP = 1200.0; //this means 0.02s per tick
-        const double BOT_LIMIT = 1000.0;
+        const double TICK_STEP = 800.0;
+        const double BOT_LIMIT = 700.0;
 
         const int H = 15;
         const int W = 15;
@@ -254,7 +254,7 @@ int main(int argc, char* argv[]) {
     // canvas.display();
 
     // //load font
-    // std::filesystem::path exeDir = std::filesystem::absolute(argv[0]).parent_path();
+    // std::filesystem::path exeDir = std::filesystem::absolute(argv[0]).parenat_path();
     // sf::Font uiFont;
     // if (!uiFont.openFromFile((exeDir / "resources" / "MinecraftRegular.otf").string())) {
     //     std::cerr << "Failed to load font\n";

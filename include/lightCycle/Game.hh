@@ -1,6 +1,10 @@
 #pragma once
 #include <lightCycle/lightCycle.hh>
 #include <lightCycle/Map.hh>
+#include <lightCycle/utility.hh>
+#include <movable/Player.hh>
+
+
 
 // #include <deque>
 // #include <iostream>
@@ -32,34 +36,34 @@ public:
 };
 
 // ---------- Actor ----------
-class actor {
-protected:
-    Position position;
-    TileColor actorColor;
-    TileColor tileColor;
+// class actor {
+// protected:
+//     Position position;
+//     TileColor actorColor;
+//     TileColor tileColor;
 
-public:
-    actor(Location l, TileColor ac);
+// public:
+//     actor(Location l, TileColor ac);
 
-    bool isDead(Map& map);
-    void changeTileBehind(Map& map);
-    void changeCurrentTile(Map& map);
+//     bool isDead(Map& map);
+//     void changeTileBehind(Map& map);
+//     void changeCurrentTile(Map& map);
 
-    void doNextLocation();
-    void changeDirection(Direction d);
-};
+//     void doNextLocation();
+//     void changeDirection(Direction d);
+// };
 
-class player : public actor {
-public:
-    player(Location l, TileColor ac);
-};
+// class player : public actor {
+// public:
+//     player(Location l, TileColor ac);
+// };
 
 // ---------- Game ----------
 class Game {
 protected:
     taskQueue tickQueue;
-    player p1;
-    player p2;
+    Player p1;
+    Player p2;
     Map map;
     int terminateCode = 0;
 
@@ -78,8 +82,8 @@ public:
     void drawPart(sf::RenderTarget& window, int tileSize, Location l);
 
     Map& getMap();
-    player& getPlayer1();
-    player& getPlayer2();
+    Player& getPlayer1();
+    Player& getPlayer2();
     int getTerminateCode();
 
     bool haveLocationTask();

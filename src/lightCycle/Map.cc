@@ -1,3 +1,4 @@
+#include <SFML/Graphics/RectangleShape.hpp>
 #include <lightCycle/Map.hh>
 
 // ---------- Tile ----------

@@ -1,8 +1,16 @@
 #pragma once
-#include <lightCycle/lightCycle.hh>
+// #include "lightCycle.hh"
+#include <SFML/Graphics/Color.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
+#include <deque>
+#include <lightCycle/Map.hh>
+
+#include <lightCycle/utility.hh>
+
 // #include <lightCycle/Map.hh>
 // #include <deque>
 // #include <SFML/Graphics.hpp>
+// #include <lightCycle/Game.hh>
 
 // ---------- Tile ----------
 struct Tile {

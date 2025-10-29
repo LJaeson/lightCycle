@@ -1,3 +1,4 @@
+#pragma once
 #include <stdio.h>
 #include <filesystem>
 #include <SFML/Window.hpp>
@@ -7,7 +8,10 @@
 
 #include <vector>
 #include <deque>
+#include <functional>
 
+#include <lightCycle/Game.hh>
+// #include <lightCycle/Map.hh>
 
 enum TileColor {
     NOPE,
@@ -85,18 +89,18 @@ struct Position {
 };
 
 //map
-struct Tile{
-    Location location;
-    TileColor tileColor;
+// struct Tile{
+//     Location location;
+//     TileColor tileColor;
 
-    void changeTileColor(TileColor ac) {
-        tileColor = ac;
+//     void changeTileColor(TileColor ac) {
+//         tileColor = ac;
 
-    }
-};
+//     }
+// // };
 
-namespace MapTypes {
-    using Grid = std::vector<std::vector<Tile>>;
+// namespace MapTypes {
+//     using Grid = std::vector<std::vector<Tile>>;
     
 
-}
+// }

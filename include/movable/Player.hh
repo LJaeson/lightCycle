@@ -5,4 +5,6 @@
 class Player : public Actor {
 public:
     Player(Location l, TileColor ac);
+
+    bool isPlayer() override {return true;};
 };

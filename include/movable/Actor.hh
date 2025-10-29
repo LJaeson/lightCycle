@@ -17,4 +17,13 @@ public:
 
     void doNextLocation();
     void changeDirection(Direction d);
+
+    virtual bool isPlayer() {return false;};
+    virtual bool isBot() {return false;};
+    TileColor getColor() const { return actorColor; };
+
+    //dummy, only useful for bot
+    virtual Direction getMove(const Game &game, TileColor color1, TileColor color2, double timeLimit) {
+        return Direction::UP; 
+    }
 };

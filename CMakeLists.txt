@@ -13,6 +13,8 @@ add_executable(light_cycle
     src/lightCycle/utility.cc
     src/movable/Actor.cc
     src/movable/Player.cc
+    src/movable/Bot.cc 
+    src/lightCycle/GameState.cc
 )
 
 target_link_libraries(light_cycle PRIVATE

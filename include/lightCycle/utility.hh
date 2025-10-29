@@ -32,6 +32,10 @@ struct Location {
     int getH() {
         return h;
     }
+
+    bool equal(Location l) {
+        return (w == l.getW()) && (h == l.getH());
+    }
 };
 
 extern int dw[4];
@@ -71,5 +75,9 @@ struct Position {
 
     void doNextLocation() {
         location = findNextLocation();
+    }
+
+    void doPreLocation() {
+        location = findPreLocation();
     }
 };

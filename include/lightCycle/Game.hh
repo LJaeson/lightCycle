@@ -3,6 +3,7 @@
 #include <lightCycle/Map.hh>
 #include <lightCycle/utility.hh>
 #include <movable/Player.hh>
+#include <iostream>
 
 
 
@@ -40,10 +41,13 @@ public:
 class Game {
 protected:
     taskQueue tickQueue;
-    Player p1;
-    Player p2;
+    Actor p1;
+    Actor p2;
     Map map;
     int terminateCode = 0;
+
+    //temp, need to relocated
+    const double BOT_LIMIT = 700.0;
 
 public:
     Game(int w, int h, Location p1Start, Location p2Start);
@@ -54,16 +58,21 @@ private:
     void modifyTile_();
     void moveActor_();
     void checkDeath_();
+    void botPlaying_();
 
 public:
     void draw(sf::RenderTarget& window, int tileSize);
     void drawPart(sf::RenderTarget& window, int tileSize, Location l);
 
     Map& getMap();
-    Player& getPlayer1();
-    Player& getPlayer2();
+    Actor& getPlayer1();
+    Actor& getPlayer2();
     int getTerminateCode();
 
     bool haveLocationTask();
     Location getLocationQ();
+
+    MapTypes::Grid Game::getMapGrid() {
+        return map.getMap();
+    }
 };

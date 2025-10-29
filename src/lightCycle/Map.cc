@@ -1,5 +1,6 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <lightCycle/Map.hh>
+#include <iostream>
 
 // ---------- Tile ----------
 void Tile::changeTileColor(TileColor ac) { tileColor = ac; }
@@ -29,6 +30,9 @@ Map::Map(int w, int h) {
         grid[0][y].changeTileColor(TileColor::BOUNDARY);
         grid[w-1][y].changeTileColor(TileColor::BOUNDARY);
     }
+
+    W = w;
+    H = h;
 }
 
 sf::Color Map::getTileColor(TileColor tileColor) const {
@@ -69,3 +73,41 @@ Tile& Map::getTile(Location l) { return grid[l.w][l.h]; }
 void Map::addLocation(Location l) { rq.addLocation(l); }
 bool Map::haveLocationTask() { return rq.haveLocationTask(); }
 Location Map::getLocationQ() { return rq.getLocationQ(); }
+
+void Map::changeTileColor(Location l, TileColor tileColor) {
+    getTile(l).changeTileColor(tileColor);
+}
+
+void Map::createRandomWall() {
+    int walkNo = random() % 11;
+    for (int i = 0; i < walkNo; ++i) {
+        int w = random() % (W - 4) + 2;
+        int h = random() % (H - 4) + 2;
+        int walkLen = random() % 8;
+        for (int j = 0; j < walkLen; ++j) {
+            if (w < 0 || w >= W || h < 0 || h >= H) return;
+            changeTileColor({w, h}, TileColor::BOUNDARY);
+            changeTileColor({W - w - 1, h}, TileColor::BOUNDARY);
+
+            std::cout << "sfklsfjls";
+
+            int move = random() % 4;
+            switch (move) {
+            case 0:
+                ++w;
+                break;
+            case 1:
+                --w;
+                break;
+            case 2:
+                ++h;
+                break;
+            case 3:
+                --h;
+                break;
+            default:
+                break;
+            }
+        }
+    }
+}

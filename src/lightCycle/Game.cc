@@ -2,7 +2,13 @@
 
 // ---------- Game ----------
 Game::Game(int w, int h, Location p1Start, Location p2Start)
-    : tickQueue{}, p1{p1Start, TileColor::BLUE}, p2{p2Start, TileColor::GREEN}, map{w,h} {}
+    : tickQueue{}, 
+    p1{p1Start, TileColor::BLUE}, 
+    p2{p2Start, TileColor::GREEN}, 
+    map{w,h} 
+    {
+        map.createRandomWall();
+    }
 
 void Game::tick() {
     tickQueue.addTask([this]{moveActor_();});

@@ -40,7 +40,11 @@ private:
     MapTypes::Grid grid;
     renderQueue rq;
 
+    int W;
+    int H;
+
     sf::Color getTileColor(TileColor tileColor) const;
+
 
 public:
     Map(int w, int h);
@@ -55,4 +59,7 @@ public:
     void addLocation(Location l);
     bool haveLocationTask();
     Location getLocationQ();
+
+    void createRandomWall();
+    void changeTileColor(Location l, TileColor tileColor);
 };

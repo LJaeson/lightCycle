@@ -1,34 +1,5 @@
 #include <lightCycle/Game.hh>
 
-// // ---------- Actor ----------
-// actor::actor(Location l, TileColor ac) {
-//     position.initPosition(l);
-//     tileColor = ac;
-
-//     if (tileColor == BLUE) actorColor = TileColor::BLUEACTOR;
-//     else if (tileColor == GREEN) actorColor = TileColor::GREENACTOR;
-// }
-
-// bool actor::isDead(Map& map) {
-//     return map.getTile(position.location).tileColor != NOPE;
-// }
-
-// void actor::changeTileBehind(Map& map) {
-//     map.getTile(position.findPreLocation()).changeTileColor(tileColor);
-//     map.addLocation(position.findPreLocation());
-// }
-
-// void actor::changeCurrentTile(Map& map) {
-//     map.getTile(position.location).changeTileColor(actorColor);
-//     map.addLocation(position.location);
-// }
-
-// void actor::doNextLocation() { position.doNextLocation(); }
-// void actor::changeDirection(Direction d) { position.changeDirection(d); }
-
-// // ---------- Player ----------
-// player::player(Location l, TileColor ac) : actor(l, ac) {}
-
 // ---------- Game ----------
 Game::Game(int w, int h, Location p1Start, Location p2Start)
     : tickQueue{}, p1{p1Start, TileColor::BLUE}, p2{p2Start, TileColor::GREEN}, map{w,h} {}

@@ -35,28 +35,6 @@ public:
     }
 };
 
-// ---------- Actor ----------
-// class actor {
-// protected:
-//     Position position;
-//     TileColor actorColor;
-//     TileColor tileColor;
-
-// public:
-//     actor(Location l, TileColor ac);
-
-//     bool isDead(Map& map);
-//     void changeTileBehind(Map& map);
-//     void changeCurrentTile(Map& map);
-
-//     void doNextLocation();
-//     void changeDirection(Direction d);
-// };
-
-// class player : public actor {
-// public:
-//     player(Location l, TileColor ac);
-// };
 
 // ---------- Game ----------
 class Game {

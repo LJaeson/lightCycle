@@ -3,7 +3,7 @@
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <deque>
-#include <lightCycle/Map.hh>
+// #include <lightCycle/Map.hh>
 
 #include <lightCycle/utility.hh>
 

@@ -1,4 +1,5 @@
 #include <lightCycle/GameState.hh>
+#include <movable/Bot.hh>
 
 GameState::GameState(int w, int h) {
     this->w = w;
@@ -12,7 +13,7 @@ GameState::GameState(Location l) {
     grid.resize(w, std::vector<TileColor>(h));
 }
 
-void GameState::copyGame(Game game, TileColor botColor, TileColor opColor) {
+void GameState::copyGame(const Game &game, TileColor botColor, TileColor opColor) {
     MapTypes::Grid gameMap = game.getMapGrid();
 
     for (int i = 0; i < w; ++i) {

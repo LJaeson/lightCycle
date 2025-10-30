@@ -10,9 +10,14 @@
 #include <deque>
 #include <functional>
 
+#include <movable/Player.hh>
+#include <movable/Bot.hh>
 #include <lightCycle/Game.hh>
 // #include <lightCycle/Map.hh>
 #include <lightCycle/utility.hh>
-#include <movable/Player.hh>
+
+
+
+extern const double BOT_LIMIT;
 
 

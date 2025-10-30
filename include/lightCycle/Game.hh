@@ -3,9 +3,10 @@
 #include <lightCycle/Map.hh>
 #include <lightCycle/utility.hh>
 #include <movable/Player.hh>
+// #include <movable/Bot.hh>
 #include <iostream>
 
-
+class Bot;
 
 // #include <deque>
 // #include <iostream>
@@ -41,13 +42,14 @@ public:
 class Game {
 protected:
     taskQueue tickQueue;
-    Actor p1;
-    Actor p2;
+    Player p1;
+    // Bot p2;
+    std::unique_ptr<Bot> p2;
     Map map;
     int terminateCode = 0;
 
     //temp, need to relocated
-    const double BOT_LIMIT = 700.0;
+    // const double BOT_LIMIT = 700.0;
 
 public:
     Game(int w, int h, Location p1Start, Location p2Start);
@@ -72,7 +74,7 @@ public:
     bool haveLocationTask();
     Location getLocationQ();
 
-    MapTypes::Grid Game::getMapGrid() {
+    MapTypes::Grid getMapGrid() const {
         return map.getMap();
     }
 };

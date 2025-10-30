@@ -1,18 +1,18 @@
 #include <lightCycle/lightCycle.hh>
 
 
+const double BOT_LIMIT = 500.0;
 
 class GameController {
+public:
+
 private:
-    // const unsigned int winW = 1000;
-    // const unsigned int winH = 800;
 
     double accumulator = 0.0;   //dont change
     const double TICK_STEP = 800.0;
-    const double BOT_LIMIT = 700.0;
 
-    const int H = 15;
-    const int W = 15;
+    const int H = 50;
+    const int W = 50;
     const unsigned int RenderBlockSize = 20;
 
     sf::RenderWindow window;

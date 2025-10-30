@@ -1,6 +1,10 @@
 #pragma once
 #include <lightCycle/Map.hh>
 #include <lightCycle/utility.hh>
+// #include <lightCycle/Game.hh>
+
+class Game;  // forward declaration
+
 
 class Actor {
 protected:

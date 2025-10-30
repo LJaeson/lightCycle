@@ -1,7 +1,13 @@
 #pragma once
 #include <movable/Actor.hh>
 #include <lightCycle/utility.hh>
+// #include <Clock.hpp>
+#include <SFML/System.hpp>
+// #include <lightCycle/lightCycle.hh>
+// #include <Clock.hpp>
 #include <lightCycle/GameState.hh>
+
+class GameState;
 
 class Bot : public Actor {
 public:
@@ -10,13 +16,10 @@ public:
     bool isBot() override {return true;};
 
 private:
-    GameState tempGameState;
+    std::unique_ptr<GameState> tempGameState;
     double timeLimit;
 public:
-    Bot(Location l, TileColor ac);
-    // Bot(int w, int h);
 
-    // bool clientControlled() override;
 
     Direction getMove(const Game &game, TileColor color1, TileColor color2, double timeLimit) override;
 

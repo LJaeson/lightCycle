@@ -1,6 +1,9 @@
-#include <lightCycle/lightCycle.hh>
+// #include <lightCycle/lightCycle.hh>
+#pragma once
 #include <lightCycle/Game.hh>
 #include <stack>
+
+class Bot;
 
 struct Move {
     Position *pos;
@@ -21,7 +24,7 @@ class GameState {
         GameState(int w, int h);
         GameState(Location l);
 
-        void copyGame(Game game, TileColor botColor, TileColor opColor);
+        void copyGame(const Game &game, TileColor botColor, TileColor opColor);
         
         bool getCrashed(Location l);
 

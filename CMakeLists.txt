@@ -3,11 +3,7 @@ project(LightCycle LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# set(CMAKE_BUILD_TYPE Debug)  # Debug mode
-# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -fsanitize=address")
 
 include(FetchContent)
 FetchContent_Declare(SFML
@@ -21,12 +17,15 @@ FetchContent_MakeAvailable(SFML)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(light_cycle
-  src/lightCycle/lightCycle.cc
-  src/lightCycle/actor.cpp
-  src/lightCycle/Game.cpp
-  src/lightCycle/Map.cpp
-  src/Player/GameState.cpp
-  src/Player/Bot.cpp
+    src/lightCycle/lightCycle.cc
+    src/lightCycle/Game.cc
+    src/lightCycle/Map.cc
+    src/lightCycle/utility.cc
+    src/movable/Actor.cc
+    src/movable/Player.cc
+    src/movable/Bot.cc 
+    src/lightCycle/GameState.cc
+    src/movable/Bot2.cpp
 )
 
 target_compile_features(light_cycle PRIVATE cxx_std_17)

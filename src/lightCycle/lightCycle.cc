@@ -1,418 +1,217 @@
 #include <lightCycle/lightCycle.hh>
-#include <Player/PlayerFactory.hpp>
-#include <Player/Player.hpp>
-#include <lightCycle/actor.hpp>
-#include <lightCycle/Map.hpp>
-#include <lightCycle/Game.hpp>
-#include <functional>
-#include <future>
-#include <cstdlib>
-#include <ctime>
+#include <thread>
+#include <movable/Bot2.hpp>
 
+const double BOT_LIMIT = 500.0;
+bool windowOpen = true;
 class GameController {
-    private:
-        const unsigned int winW = 1000;
-        const unsigned int winH = 800;
+public:
 
-        double accumulator = 0.0;   //dont change
-        const double TICK_STEP = 800.0;
-        const double BOT_LIMIT = 700.0;
+private:
 
-        const int H = 15;
-        const int W = 20;
+    double accumulator = 0.0;   //dont change
+    const double TICK_STEP = 800.0;
 
-        sf::RenderWindow window;
-        sf::Font uiFont;
+    const int H = 15;
+    const int W = 15;
 
-        std::unique_ptr<Player> player1;
-        std::unique_ptr<Player> player2;
-        Game game;
+    const unsigned int winW = 1000;
+    const unsigned int winH = 800;
 
-    public:
-        GameController(std::string player1, std::string player2): 
-            game(W, H, Location{1, 1}, Location{W - 2, 1}),
-            window(sf::VideoMode({winW, winH}), "Light Cycle")
-        {
-            srand(time(0));
-            createRandomWall();
-            window.setFramerateLimit(60);
-            this->player1 = PlayerFactory(player1, W, H);
-            this->player2 = PlayerFactory(player2, W, H);
+    const float renderBlockSizeW = (double) winW / W;
+    const float renderBlockSizeH = (double) winH / H;
+
+    const unsigned int RenderBlockSize = 20;
+
+    sf::RenderWindow window;
+    sf::Font uiFont;
+    Game game;
+
+    //clock, how fast the game goes
+    sf::Clock clock;
+
+    //canva, to render graphic
+    sf::RenderTexture canvas;
+
+
+    static std::queue<sf::Keyboard::Scancode> inputQueue;
+    static std::mutex queueMutex;
+
+    static bool windowOpen;
+public:
+    GameController(): 
+    game(W, H, Location{1, 0}, Location{W - 2,0}),
+    window(sf::VideoMode({winW, winH}), "Light Cycle"),
+    canvas({winW, winH})
+    {};
+
+    void playerInput(sf::Keyboard::Scancode key) {  // or sf::Keyboard::Scancode if you prefer
+        // --- Player 1 (WASD)
+        if (game.getPlayer1().isPlayer()) {
+            if (key == sf::Keyboard::Scancode::W) game.getPlayer1().changeDirection(Direction::UP);
+            else if (key == sf::Keyboard::Scancode::A) game.getPlayer1().changeDirection(Direction::LEFT);
+            else if (key == sf::Keyboard::Scancode::S) game.getPlayer1().changeDirection(Direction::DOWN);
+            else if (key == sf::Keyboard::Scancode::D) game.getPlayer1().changeDirection(Direction::RIGHT);
         }
 
-        void createRandomWall() {
-            int walkNo = random() % 5;
-            for (int i = 0; i < walkNo; ++i) {
-                int w = random() % (W - 4) + 2;
-                int h = random() % (H - 4) + 2;
-                int walkLen = random() % 8;
-                for (int j = 0; j < walkLen; ++j) {
-                    if (w < 0 || w >= W || h < 0 || h >= H) return;
-                    game.changeTileColor({w, h}, TileColor::BOUNDARY);
-                    game.changeTileColor({W - w - 1, h}, TileColor::BOUNDARY);
+        // --- Player 2 (Arrow keys)
+        if (game.getPlayer2().isPlayer()) {
+            if (key == sf::Keyboard::Scancode::Up) game.getPlayer2().changeDirection(Direction::UP);
+            else if (key == sf::Keyboard::Scancode::Left) game.getPlayer2().changeDirection(Direction::LEFT);
+            else if (key == sf::Keyboard::Scancode::Down) game.getPlayer2().changeDirection(Direction::DOWN);
+            else if (key == sf::Keyboard::Scancode::Right) game.getPlayer2().changeDirection(Direction::RIGHT);
+        }
 
-                    int move = random() % 4;
-                    switch (move) {
-                    case 0:
-                        ++w;
-                        break;
-                    case 1:
-                        --w;
-                        break;
-                    case 2:
-                        ++h;
-                        break;
-                    case 3:
-                        --h;
-                        break;
-                    default:
-                        break;
-                    }
+        // --- Restart game
+        if (key == sf::Keyboard::Scancode::Space && game.getTerminateCode() != 0) {
+            game = Game(W, H, Location{1, 0}, Location{W - 2, 0}); 
+            clock.restart();
+            accumulator = 0.0;
+
+            std::cout << "Game restarted" << std::endl;
+            canvas.clear();
+            game.draw(canvas, renderBlockSizeW, renderBlockSizeH);
+            canvas.display();
+        }
+    }
+
+
+    void run () {
+        window.setFramerateLimit(60);
+
+        canvas.clear();
+        game.draw(canvas, renderBlockSizeW, renderBlockSizeH);
+        canvas.display();
+
+        while (window.isOpen()) {
+
+            while (const std::optional<sf::Event> event = window.pollEvent()) {
+                if (event->is<sf::Event::Closed>()) {
+                    window.close();
+                }
+
+                if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+                    std::lock_guard<std::mutex> lock(queueMutex);
+                    inputQueue.push(keyPressed->scancode);
                 }
             }
-        }
 
-        void drawGame() {
-            const float renderBlockSizeW = (double) winW / W;
-            const float renderBlockSizeH = (double) winH / H;
+            while (true) {
 
-            sf::RectangleShape rect({renderBlockSizeW, renderBlockSizeH});
-            MapTypes::Grid grid = game.getMapGrid();
+                sf::Keyboard::Scancode key;
+                {
+                    std::lock_guard<std::mutex> lock(queueMutex);
+                    if (inputQueue.empty()) break;
+                    key = inputQueue.front();
+                    inputQueue.pop();
+                }
+                playerInput(key); // your function
+            }
 
-            for (int w = 0; w < grid.size(); w++) {
-                for (int h = 0; h < grid[w].size(); h++) {
-                    Tile tile = grid[w][h];
-                    sf::Color color;  
+            //game tick and graphic handle
+            float delta = clock.restart().asMilliseconds();
+            accumulator += delta;
 
-                    switch (tile.tileColor) {
-                        case TileColor::NOPE:        color = sf::Color(255, 255, 255);      break;
-                        case TileColor::BLUE:        color = sf::Color(0,190,172);  break;
-                        case TileColor::GREEN:       color = sf::Color(132,178,42); break;
-                        case TileColor::BOUNDARY:    color = sf::Color(0,0,0);    break;
-                        case TileColor::GREENACTOR:  color = sf::Color(65,114,0);   break;
-                        case TileColor::BLUEACTOR:   color = sf::Color(97,138,180); break;
-                        default:                     color = sf::Color(0,0,0);      break;
+            if (game.getTerminateCode() == 0) {
+                while (accumulator >= TICK_STEP) {
+                    game.tick();
+                    accumulator -= TICK_STEP;
+                    window.clear();
+                    GameState gamestate(W, H);
+                    gamestate.copyGame(game, game.getPlayer1().getColor(), game.getPlayer2().getColor());
+
+                    std::vector<std::vector<char>> visited = Bot2::VoronoiDiagram(gamestate);
+                    Map &map = game.getMap();
+                    sf::RectangleShape rect({renderBlockSizeW, renderBlockSizeH});
+                    for (int i = 0; i < W; ++i) {
+                        for (int j = 0; j < H; ++j) {
+                            std::cout << static_cast<int> (visited[i][j]);
+                            sf::Color color;
+                            if (visited[i][j] == 1) {
+                                color = map.getTileColor(LIGHTBLUE);
+                            } else if (visited[i][j] == 2) {
+                                color = map.getTileColor(LIGHTGREEN);
+                            } else {
+                                color = map.getTileColor(map.getTile({i, j}).tileColor);
+                            }
+
+                            rect.setFillColor(color);
+                            rect.setOutlineThickness(1.f);
+                            rect.setOutlineColor(sf::Color(0,0,0));
+                            rect.setPosition(sf::Vector2f(i * renderBlockSizeW, j * renderBlockSizeH));
+                            canvas.draw(rect);
+                        }
+                        std::cout << std::endl;
                     }
                     
-                    rect.setFillColor(color);
-                    rect.setOutlineThickness(1.f);
-                    rect.setOutlineColor(sf::Color(0,0,0));
-                    rect.setPosition(sf::Vector2f(w * renderBlockSizeW, h * renderBlockSizeH));
-                    window.draw(rect);
-                }
-            }
-        }
-
-        void loadGameFont(std::string fontPath) {
-            if (!uiFont.openFromFile(fontPath)) {
-                std::cerr << "Failed to load font\n";
-            }
-        }
-
-        void clientMovementControl(sf::Keyboard::Scancode key, sf::Clock &clock, double &accumulator) {
-            int player1 = -1;
-            int player2 = -1;
-            switch (key) {
-            // --- Player 1 (WASD)
-            case sf::Keyboard::Scan::W:
-                player1 = Direction::UP;
-                break;
-            case sf::Keyboard::Scan::A:
-                player1 = Direction::LEFT;
-                break;
-            case sf::Keyboard::Scan::S:
-                player1 = Direction::DOWN;
-                break;
-            case sf::Keyboard::Scan::D:
-                player1 = Direction::RIGHT;
-                break;
-
-            // --- Player 2 (Arrow Keys)
-            case sf::Keyboard::Scan::Up:
-                player2 = Direction::UP;
-                break;
-            case sf::Keyboard::Scan::Left:
-                player2 = Direction::LEFT;
-                break;
-            case sf::Keyboard::Scan::Down:
-                player2 = Direction::DOWN;
-                break;
-            case sf::Keyboard::Scan::Right:
-                player2 = Direction::RIGHT;
-                break;
-
-            //restart the game
-            case sf::Keyboard::Scan::Space:
-                if (game.getTerminateCode() != 0) {
-                    game = Game(W, H, Location{1, 1}, Location{W - 2, 1}); 
-                    createRandomWall();
-                    clock.restart();    // reset game timer
-                    accumulator = 0.0;  // reset tick timing
-                    std::cout << "Game restarted" << std::endl;
-
-                    window.clear();
-                    drawGame();
-                }
-                break;
-
-            default:
-                break;
-            }
-
-            if (player1 != -1 && this->player1->clientControlled()) {
-                game.getPlayer1().changeDirection((Direction) player1);
-            } else if (player2 != -1 && this->player2->clientControlled()) {
-                game.getPlayer2().changeDirection((Direction) player2);
-            }
-        }
-
-        void botPlaying() {
-            if (player1->clientControlled() && player2->clientControlled()) return;
-            sf::Clock clock;
-            std::future<Direction> fut1;
-            std::future<Direction> fut2;
-
-            if (!player1->clientControlled()) {
-                fut1 = std::async(std::launch::async, [this]() {
-                    return player1->getMove(game, game.getPlayer1().getColor(), game.getPlayer2().getColor(), BOT_LIMIT);
-                });
-            }
-
-            if (!player2->clientControlled()) {
-                fut2 = std::async(std::launch::async, [this]() {
-                    return player2->getMove(game, game.getPlayer2().getColor(), game.getPlayer1().getColor(), BOT_LIMIT);
-                });
-            }
-
-            if (!player1->clientControlled()) {
-                game.getPlayer1().changeDirection(fut1.get());
-                std::cout << "Bot 1 time: " << clock.getElapsedTime().asMilliseconds() << std::endl;
-            }
-            if (!player2->clientControlled()) {
-                game.getPlayer2().changeDirection(fut2.get());
-                std::cout << "Bot 2 time: " << clock.getElapsedTime().asMilliseconds() << std::endl;
-            }
-
-            std::cout << "Total time: " << clock.getElapsedTime().asMilliseconds() << std::endl;
-        }
-
-        void gameLoop() {
-            //clock, how fast the game goes
-            sf::Clock clock;
-
-            while (window.isOpen()) {
-                while (const std::optional event = window.pollEvent()) {
-                    // close the window
-                    if (event->is<sf::Event::Closed>()) {
-                        window.close();
-                    }
-
-                    if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
-                        clientMovementControl(keyPressed->scancode, clock, accumulator);
-                    }
-                }
-                // Clear the window
-                window.clear();
-
-                //game tick and graphic handle
-                float delta = clock.restart().asMilliseconds();
-                accumulator += delta;
-
-                if (game.getTerminateCode() == 0) {
-                    while (accumulator >= TICK_STEP) {
-                        botPlaying();
-                        std::cout << "One tick\n";
-                        game.tick();
-                        accumulator -= TICK_STEP;
-                        if (game.getTerminateCode() != 0) {
-                            break;
-                        }
-                    }
+                    // while (game.haveLocationTask()) {
+                    //     game.drawPart(canvas, renderBlockSizeW, renderBlockSizeH, game.getLocationQ());
+                    // }
+                    // canvas.display();
                 }
 
-                drawGame();
-                
-                //game over
-                if (game.getTerminateCode() != 0) {
+            }
 
-                    sf::Text text(uiFont);
-                    text.setCharacterSize(50);
-                    text.setFillColor(sf::Color::Red);
+            window.clear();
+            sf::Sprite frame(canvas.getTexture());
+            window.draw(frame);
 
-                    switch (game.getTerminateCode()) {
-                        case 1: text.setString("Draw! Press SPACE to restart"); break;
-                        case 2: text.setString("Player 2 Wins! Press SPACE to restart"); break;
-                        case 3: text.setString("Player 1 Wins! Press SPACE to restart"); break;
-                    }
 
-                    //central the text
-                    sf::FloatRect bounds = text.getLocalBounds();
-                    text.setOrigin(
-                        {bounds.position.x + bounds.size.x / 2.f,
-                        bounds.position.y + bounds.size.y / 2.f}
-                    );
-                    auto size = window.getSize();
-                    text.setPosition(
-                        {static_cast<float>(size.x) / 2.f,
-                        static_cast<float>(size.y) / 2.f}
-                    );
+            //game over
+            if (game.getTerminateCode() != 0) {
 
-                    window.draw(text);
+                sf::Text text(uiFont);
+                text.setCharacterSize(50);
+                text.setFillColor(sf::Color::Red);
+
+                switch (game.getTerminateCode()) {
+                    case 1: text.setString("Draw! Press SPACE to restart"); break;
+                    case 2: text.setString("Player 2 Wins! Press SPACE to restart"); break;
+                    case 3: text.setString("Player 1 Wins! Press SPACE to restart"); break;
                 }
 
-                window.display();
+                //central the text
+                sf::FloatRect bounds = text.getLocalBounds();
+                text.setOrigin(
+                    {bounds.position.x + bounds.size.x / 2.f,
+                    bounds.position.y + bounds.size.y / 2.f}
+                );
+                auto size = window.getSize();
+                text.setPosition(
+                    {static_cast<float>(size.x) / 2.f,
+                    static_cast<float>(size.y) / 2.f}
+                );
+
+                window.draw(text);
             }
+
+            window.display();
         }
+
+    }
+
+
+    void loadGameFont(std::string fontPath) {
+        if (!uiFont.openFromFile(fontPath)) {
+            std::cerr << "Failed to load font\n";
+        }
+    }
+
 };
+
+std::queue<sf::Keyboard::Scancode> GameController::inputQueue;
+std::mutex GameController::queueMutex;
+bool GameController::windowOpen = true;
 
 int main(int argc, char* argv[]) {
 
-    GameController controller("Bot", "Bot");
+    GameController controller;
 
     std::filesystem::path exeDir = std::filesystem::absolute(argv[0]).parent_path();
     std::string path = (exeDir / "resources" / "MinecraftRegular.otf").string();
     controller.loadGameFont(path);
 
-    controller.gameLoop();
-    // const int W = 450;
-    // const int H = 250;
-    // const int RenderBlockSize = 50;
-    // sf::RenderWindow window(sf::VideoMode({RenderBlockSize * W, RenderBlockSize * H}), "Light Cycle");
-    // window.setFramerateLimit(60);
-
-    // Game game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5, 0});
-
-    // sf::RenderTexture canvas({RenderBlockSize * W, RenderBlockSize * H});
-
-    // canvas.clear();
-    // game.draw(canvas, RenderBlockSize);
-    // canvas.display();
-
-    // //load font
-    // std::filesystem::path exeDir = std::filesystem::absolute(argv[0]).parenat_path();
-    // sf::Font uiFont;
-    // if (!uiFont.openFromFile((exeDir / "resources" / "MinecraftRegular.otf").string())) {
-    //     std::cerr << "Failed to load font\n";
-    // }
-
-    // //clock, how fast the game goes
-    // sf::Clock clock;
-    // double accumulator = 0.0;   //dont change
-    // const double TICK_STEP = 100.0; //this means 0.02s per tick
-
-    // while (window.isOpen()) {
-    //     while (const std::optional event = window.pollEvent()) {
-    //         // close the window
-    //         if (event->is<sf::Event::Closed>()) {
-    //             window.close();
-    //         }
-
-
-    //         if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
-
-    //             switch (keyPressed->scancode) {
-    //             // --- Player 1 (WASD)
-    //             case sf::Keyboard::Scan::W:
-    //                 game.getPlayer1().changeDirection(Direction::UP);
-    //                 break;
-    //             case sf::Keyboard::Scan::A:
-    //                 game.getPlayer1().changeDirection(Direction::LEFT);
-    //                 break;
-    //             case sf::Keyboard::Scan::S:
-    //                 game.getPlayer1().changeDirection(Direction::DOWN);
-    //                 break;
-    //             case sf::Keyboard::Scan::D:
-    //                 game.getPlayer1().changeDirection(Direction::RIGHT);
-    //                 break;
-
-    //             // --- Player 2 (Arrow Keys)
-    //             case sf::Keyboard::Scan::Up:
-    //                 game.getPlayer2().changeDirection(Direction::UP);
-    //                 break;
-    //             case sf::Keyboard::Scan::Left:
-    //                 game.getPlayer2().changeDirection(Direction::LEFT);
-    //                 break;
-    //             case sf::Keyboard::Scan::Down:
-    //                 game.getPlayer2().changeDirection(Direction::DOWN);
-    //                 break;
-    //             case sf::Keyboard::Scan::Right:
-    //                 game.getPlayer2().changeDirection(Direction::RIGHT);
-    //                 break;
-
-    //             //restart the game
-    //             case sf::Keyboard::Scan::Space:
-    //                 if (game.getTerminateCode() != 0) {
-    //                     game = Game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5,0}); 
-
-    //                     clock.restart();    // reset game timer
-    //                     accumulator = 0.0;  // reset tick timing
-    //                     std::cout << "Game restarted" << std::endl;
-
-    //                     canvas.clear();
-    //                     game.draw(canvas, RenderBlockSize);
-    //                     canvas.display();
-    //                 }
-    //                 break;
-
-    //             default:
-    //                 break;
-    //             }
-    //         }
-    //     }
-
-    //     //game tick and graphic handle
-    //     float delta = clock.restart().asMilliseconds();
-    //     accumulator += delta;
-
-    //     if (game.getTerminateCode() == 0) {
-    //         while (accumulator >= TICK_STEP) {
-    //             game.tick();
-    //             accumulator -= TICK_STEP;
-
-    //             while (game.haveLocationTask()) {
-    //                 game.drawPart(canvas, RenderBlockSize, game.getLocationQ());
-    //             }
-    //             canvas.display();
-    //         }
-
-    //     }
-
-    //     window.clear();
-    //     sf::Sprite frame(canvas.getTexture());
-    //     window.draw(frame);
-
-
-    //     //game over
-    //     if (game.getTerminateCode() != 0) {
-
-    //         sf::Text text(uiFont);
-    //         text.setCharacterSize(50);
-    //         text.setFillColor(sf::Color::White);
-
-    //         switch (game.getTerminateCode()) {
-    //             case 1: text.setString("Draw! Press SPACE to restart"); break;
-    //             case 2: text.setString("Player 2 Wins! Press SPACE to restart"); break;
-    //             case 3: text.setString("Player 1 Wins! Press SPACE to restart"); break;
-    //         }
-
-    //         //central the text
-    //         sf::FloatRect bounds = text.getLocalBounds();
-    //         text.setOrigin(
-    //             {bounds.position.x + bounds.size.x / 2.f,
-    //             bounds.position.y + bounds.size.y / 2.f}
-    //         );
-    //         auto size = window.getSize();
-    //         text.setPosition(
-    //             {static_cast<float>(size.x) / 2.f,
-    //             static_cast<float>(size.y) / 2.f}
-    //         );
-
-    //         window.draw(text);
-    //     }
-
-    //     window.display();
-    // }
-
+    controller.run();
 
     return 0;
 }

@@ -7,8 +7,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(SFML 3 REQUIRED COMPONENTS Graphics Window Audio)
 
 add_executable(light_cycle
-  src/lightCycle.cc
-  include/lightCycle/lightCycle.hh
+    src/lightCycle/lightCycle.cc
+    src/lightCycle/Game.cc
+    src/lightCycle/Map.cc
+    src/lightCycle/utility.cc
+    src/movable/Actor.cc
+    src/movable/Player.cc
+    src/movable/Bot.cc 
+    src/lightCycle/GameState.cc
 )
 
 target_link_libraries(light_cycle PRIVATE

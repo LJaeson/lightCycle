@@ -9,9 +9,9 @@
 #define MAX_DEPTH 10
 
 
-Bot::Bot(Location l, TileColor ac)
+Bot::Bot(Location l, Location mapSize, TileColor ac)
     : Actor(l, ac),
-    tempGameState(std::make_unique<GameState>(l))
+    tempGameState(std::make_unique<GameState>(mapSize))
     {
         srand(time(0));
     }
@@ -106,6 +106,13 @@ double Bot::evaluate() {
     } else if (tempGameState->getCrashed(tempGameState->oponent.location)) {
         return 100;
     }
-    return 50;
+    int freeSpaceCount = 0;
+    for (int i = 0; i < Direction::LEFT; i++) {
+        Location l = tempGameState->bot.findNextLocationFromDirection((Direction) i);
+        if (tempGameState->grid[l.w][l.h] == TileColor::NOPE) {
+            ++freeSpaceCount;
+        }
+    }
+    return 10 * (5 - freeSpaceCount);
     // return 5 * tempGameState.getPossibleMove(tempGameState.bot).size();
 }

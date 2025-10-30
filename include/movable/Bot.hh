@@ -11,7 +11,7 @@ class GameState;
 
 class Bot : public Actor {
 public:
-    Bot(Location l, TileColor ac);
+    Bot(Location l, Location mapSize, TileColor ac);
 
     bool isBot() override {return true;};
 
@@ -30,7 +30,7 @@ public:
 
     double minimax(int depth, bool maximizingPlayer, sf::Clock &clock, int &position);
 
-    double evaluate();
+    double virtual evaluate();
 
     bool exceedTimeLimit(sf::Clock &clock);
 

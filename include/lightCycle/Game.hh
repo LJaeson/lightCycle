@@ -64,8 +64,8 @@ private:
     void botPlaying_();
 
 public:
-    void draw(sf::RenderTarget& window, int tileSize);
-    void drawPart(sf::RenderTarget& window, int tileSize, Location l);
+    void draw(sf::RenderTarget& window, int tileSizeW, int tileSizeH);
+    void drawPart(sf::RenderTarget& window, int tileSizeW, int tileSizeH, Location l);
 
     Map& getMap();
     Actor& getPlayer1();

@@ -1,6 +1,6 @@
 #include <lightCycle/lightCycle.hh>
 #include <thread>
-
+#include <movable/Bot2.hpp>
 
 const double BOT_LIMIT = 500.0;
 bool windowOpen = true;
@@ -12,8 +12,15 @@ private:
     double accumulator = 0.0;   //dont change
     const double TICK_STEP = 800.0;
 
-    const int H = 30;
-    const int W = 30;
+    const int H = 15;
+    const int W = 15;
+
+    const unsigned int winW = 1000;
+    const unsigned int winH = 800;
+
+    const float renderBlockSizeW = (double) winW / W;
+    const float renderBlockSizeH = (double) winH / H;
+
     const unsigned int RenderBlockSize = 20;
 
     sf::RenderWindow window;
@@ -33,13 +40,10 @@ private:
     static bool windowOpen;
 public:
     GameController(): 
-    game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5,0}),
-    window(sf::VideoMode({RenderBlockSize * W, RenderBlockSize * H}), "Light Cycle"),
-    canvas({RenderBlockSize * W, RenderBlockSize * H})
+    game(W, H, Location{1, 0}, Location{W - 2,0}),
+    window(sf::VideoMode({winW, winH}), "Light Cycle"),
+    canvas({winW, winH})
     {};
-        
-
-    
 
     void playerInput(sf::Keyboard::Scancode key) {  // or sf::Keyboard::Scancode if you prefer
         // --- Player 1 (WASD)
@@ -60,13 +64,13 @@ public:
 
         // --- Restart game
         if (key == sf::Keyboard::Scancode::Space && game.getTerminateCode() != 0) {
-            game = Game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5, 0}); 
+            game = Game(W, H, Location{1, 0}, Location{W - 2, 0}); 
             clock.restart();
             accumulator = 0.0;
 
             std::cout << "Game restarted" << std::endl;
             canvas.clear();
-            game.draw(canvas, RenderBlockSize);
+            game.draw(canvas, renderBlockSizeW, renderBlockSizeH);
             canvas.display();
         }
     }
@@ -76,7 +80,7 @@ public:
         window.setFramerateLimit(60);
 
         canvas.clear();
-        game.draw(canvas, RenderBlockSize);
+        game.draw(canvas, renderBlockSizeW, renderBlockSizeH);
         canvas.display();
 
         while (window.isOpen()) {
@@ -112,11 +116,38 @@ public:
                 while (accumulator >= TICK_STEP) {
                     game.tick();
                     accumulator -= TICK_STEP;
+                    window.clear();
+                    GameState gamestate(W, H);
+                    gamestate.copyGame(game, game.getPlayer1().getColor(), game.getPlayer2().getColor());
 
-                    while (game.haveLocationTask()) {
-                        game.drawPart(canvas, RenderBlockSize, game.getLocationQ());
+                    std::vector<std::vector<char>> visited = Bot2::VoronoiDiagram(gamestate);
+                    Map &map = game.getMap();
+                    sf::RectangleShape rect({renderBlockSizeW, renderBlockSizeH});
+                    for (int i = 0; i < W; ++i) {
+                        for (int j = 0; j < H; ++j) {
+                            std::cout << static_cast<int> (visited[i][j]);
+                            sf::Color color;
+                            if (visited[i][j] == 1) {
+                                color = map.getTileColor(LIGHTBLUE);
+                            } else if (visited[i][j] == 2) {
+                                color = map.getTileColor(LIGHTGREEN);
+                            } else {
+                                color = map.getTileColor(map.getTile({i, j}).tileColor);
+                            }
+
+                            rect.setFillColor(color);
+                            rect.setOutlineThickness(1.f);
+                            rect.setOutlineColor(sf::Color(0,0,0));
+                            rect.setPosition(sf::Vector2f(i * renderBlockSizeW, j * renderBlockSizeH));
+                            canvas.draw(rect);
+                        }
+                        std::cout << std::endl;
                     }
-                    canvas.display();
+                    
+                    // while (game.haveLocationTask()) {
+                    //     game.drawPart(canvas, renderBlockSizeW, renderBlockSizeH, game.getLocationQ());
+                    // }
+                    // canvas.display();
                 }
 
             }
@@ -131,7 +162,7 @@ public:
 
                 sf::Text text(uiFont);
                 text.setCharacterSize(50);
-                text.setFillColor(sf::Color::White);
+                text.setFillColor(sf::Color::Red);
 
                 switch (game.getTerminateCode()) {
                     case 1: text.setString("Draw! Press SPACE to restart"); break;

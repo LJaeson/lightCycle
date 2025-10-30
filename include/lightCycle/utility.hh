@@ -5,7 +5,9 @@ enum TileColor {
     GREEN,
     BLUEACTOR,
     GREENACTOR,
-    BOUNDARY
+    BOUNDARY,
+    LIGHTBLUE,
+    LIGHTGREEN
 };
 
 //     1
@@ -69,6 +71,10 @@ struct Position {
 
     Location findPreLocation() const {
         return Location{location.w - dw[direction], location.h - dh[direction]};
+    }
+
+    Location findNextLocationFromDirection(Direction d) {
+        return Location{location.w + dw[d], location.h + dh[d]};
     }
 
     void doNextLocation() {

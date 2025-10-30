@@ -6,8 +6,8 @@ Game::Game(int w, int h, Location p1Start, Location p2Start)
     : tickQueue{}, 
 
     // p1(new Player(p1Start, TileColor::BLUE)),
-    p1(new Bot(p1Start, TileColor::BLUE)),
-    p2(new Bot(p2Start, TileColor::GREEN)),
+    p1(new Bot(p1Start, {w, h}, TileColor::BLUE)),
+    p2(new Bot(p2Start, {w, h}, TileColor::GREEN)),
     map{w,h} 
     {
         map.createRandomWall();
@@ -75,8 +75,8 @@ void Game::checkDeath_() {
     else if (t2)    { std::cout << "p1 win"; terminateCode = 3; }
 }
 
-void Game::draw(sf::RenderTarget& window, int tileSize) { map.draw(window, tileSize); }
-void Game::drawPart(sf::RenderTarget& window, int tileSize, Location l) { map.drawPart(window, tileSize, l); }
+void Game::draw(sf::RenderTarget& window, int tileSizeW, int tileSizeH) { map.draw(window, tileSizeW, tileSizeH); }
+void Game::drawPart(sf::RenderTarget& window, int tileSizeW, int tileSizeH, Location l) { map.drawPart(window, tileSizeW, tileSizeH, l); }
 
 Map& Game::getMap() { return map; }
 Actor& Game::getPlayer1() { return *p1; }

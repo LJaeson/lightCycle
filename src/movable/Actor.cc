@@ -9,7 +9,8 @@ Actor::Actor(Location l, TileColor ac) {
 }
 
 bool Actor::isDead(Map& map) {
-    return map.getTile(position.location).tileColor != NOPE;
+    TileColor tileColor = map.getTile(position.location).tileColor;
+    return tileColor != NOPE;
 }
 
 void Actor::changeTileBehind(Map& map) {

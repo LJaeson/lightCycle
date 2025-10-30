@@ -7,11 +7,6 @@
 
 #include <lightCycle/utility.hh>
 
-// #include <lightCycle/Map.hh>
-// #include <deque>
-// #include <SFML/Graphics.hpp>
-// #include <lightCycle/Game.hh>
-
 // ---------- Tile ----------
 struct Tile {
     Location location;

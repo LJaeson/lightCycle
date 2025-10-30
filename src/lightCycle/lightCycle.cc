@@ -32,58 +32,37 @@ public:
     window(sf::VideoMode({RenderBlockSize * W, RenderBlockSize * H}), "Light Cycle"),
     canvas({RenderBlockSize * W, RenderBlockSize * H})
     {};
+        
 
-    void playerInput(sf::Keyboard::Scancode key) {
-
-        switch (key) {
+    void playerInput(sf::Keyboard::Scancode key) {  // or sf::Keyboard::Scancode if you prefer
         // --- Player 1 (WASD)
-        case sf::Keyboard::Scan::W:
-            game.getPlayer1().changeDirection(Direction::UP);
-            break;
-        case sf::Keyboard::Scan::A:
-            game.getPlayer1().changeDirection(Direction::LEFT);
-            break;
-        case sf::Keyboard::Scan::S:
-            game.getPlayer1().changeDirection(Direction::DOWN);
-            break;
-        case sf::Keyboard::Scan::D:
-            game.getPlayer1().changeDirection(Direction::RIGHT);
-            break;
+        if (game.getPlayer1().isPlayer()) {
+            if (key == sf::Keyboard::Scancode::W) game.getPlayer1().changeDirection(Direction::UP);
+            else if (key == sf::Keyboard::Scancode::A) game.getPlayer1().changeDirection(Direction::LEFT);
+            else if (key == sf::Keyboard::Scancode::S) game.getPlayer1().changeDirection(Direction::DOWN);
+            else if (key == sf::Keyboard::Scancode::D) game.getPlayer1().changeDirection(Direction::RIGHT);
+        }
 
-        // --- Player 2 (Arrow Keys)
-        case sf::Keyboard::Scan::Up:
-            game.getPlayer2().changeDirection(Direction::UP);
-            break;
-        case sf::Keyboard::Scan::Left:
-            game.getPlayer2().changeDirection(Direction::LEFT);
-            break;
-        case sf::Keyboard::Scan::Down:
-            game.getPlayer2().changeDirection(Direction::DOWN);
-            break;
-        case sf::Keyboard::Scan::Right:
-            game.getPlayer2().changeDirection(Direction::RIGHT);
-            break;
+        // --- Player 2 (Arrow keys)
+        if (game.getPlayer2().isPlayer()) {
+            if (key == sf::Keyboard::Scancode::Up) game.getPlayer2().changeDirection(Direction::UP);
+            else if (key == sf::Keyboard::Scancode::Left) game.getPlayer2().changeDirection(Direction::LEFT);
+            else if (key == sf::Keyboard::Scancode::Down) game.getPlayer2().changeDirection(Direction::DOWN);
+            else if (key == sf::Keyboard::Scancode::Right) game.getPlayer2().changeDirection(Direction::RIGHT);
+        }
 
-        //restart the game
-        case sf::Keyboard::Scan::Space:
-            if (game.getTerminateCode() != 0) {
-                game = Game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5,0}); 
+        // --- Restart game
+        if (key == sf::Keyboard::Scancode::Space && game.getTerminateCode() != 0) {
+            game = Game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5, 0}); 
+            clock.restart();
+            accumulator = 0.0;
 
-                clock.restart();    // reset game timer
-                accumulator = 0.0;  // reset tick timing
-                std::cout << "Game restarted" << std::endl;
-
-                canvas.clear();
-                game.draw(canvas, RenderBlockSize);
-                canvas.display();
-            }
-            break;
-
-        default:
-            break;
+            std::cout << "Game restarted" << std::endl;
+            canvas.clear();
+            game.draw(canvas, RenderBlockSize);
+            canvas.display();
         }
     }
-
 
     void run () {
         window.setFramerateLimit(60);

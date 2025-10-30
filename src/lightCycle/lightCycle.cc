@@ -1,8 +1,9 @@
 #include <lightCycle/lightCycle.hh>
+#include <thread>
 
 
 const double BOT_LIMIT = 500.0;
-
+bool windowOpen = true;
 class GameController {
 public:
 
@@ -11,8 +12,8 @@ private:
     double accumulator = 0.0;   //dont change
     const double TICK_STEP = 800.0;
 
-    const int H = 50;
-    const int W = 50;
+    const int H = 30;
+    const int W = 30;
     const unsigned int RenderBlockSize = 20;
 
     sf::RenderWindow window;
@@ -26,6 +27,10 @@ private:
     sf::RenderTexture canvas;
 
 
+    static std::queue<sf::Keyboard::Scancode> inputQueue;
+    static std::mutex queueMutex;
+
+    static bool windowOpen;
 public:
     GameController(): 
     game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5,0}),
@@ -33,6 +38,8 @@ public:
     canvas({RenderBlockSize * W, RenderBlockSize * H})
     {};
         
+
+    
 
     void playerInput(sf::Keyboard::Scancode key) {  // or sf::Keyboard::Scancode if you prefer
         // --- Player 1 (WASD)
@@ -64,6 +71,7 @@ public:
         }
     }
 
+
     void run () {
         window.setFramerateLimit(60);
 
@@ -71,18 +79,29 @@ public:
         game.draw(canvas, RenderBlockSize);
         canvas.display();
 
-
         while (window.isOpen()) {
-            while (const std::optional event = window.pollEvent()) {
-                // close the window
+
+            while (const std::optional<sf::Event> event = window.pollEvent()) {
                 if (event->is<sf::Event::Closed>()) {
                     window.close();
                 }
 
-
                 if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
-                    playerInput(keyPressed->scancode);
+                    std::lock_guard<std::mutex> lock(queueMutex);
+                    inputQueue.push(keyPressed->scancode);
                 }
+            }
+
+            while (true) {
+
+                sf::Keyboard::Scancode key;
+                {
+                    std::lock_guard<std::mutex> lock(queueMutex);
+                    if (inputQueue.empty()) break;
+                    key = inputQueue.front();
+                    inputQueue.pop();
+                }
+                playerInput(key); // your function
             }
 
             //game tick and graphic handle
@@ -149,6 +168,9 @@ public:
 
 };
 
+std::queue<sf::Keyboard::Scancode> GameController::inputQueue;
+std::mutex GameController::queueMutex;
+bool GameController::windowOpen = true;
 
 int main(int argc, char* argv[]) {
 

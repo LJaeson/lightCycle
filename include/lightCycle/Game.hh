@@ -42,9 +42,10 @@ public:
 class Game {
 protected:
     taskQueue tickQueue;
-    Player p1;
+    // Player p1;
     // Bot p2;
-    std::unique_ptr<Bot> p2;
+    std::unique_ptr<Actor> p1;
+    std::unique_ptr<Actor> p2;
     Map map;
     int terminateCode = 0;
 

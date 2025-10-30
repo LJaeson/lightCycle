@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <ctime>
 
-#define MAX_DEPTH 20
+#define MAX_DEPTH 10
 
 
 Bot::Bot(Location l, TileColor ac)
@@ -22,6 +22,7 @@ Bot::Bot(Location l, TileColor ac)
 // 
 
 Direction Bot::getMove(const Game &game, TileColor color1, TileColor color2, double timeLimit) {
+    
     sf::Clock clock;
     this->timeLimit = timeLimit;
     tempGameState->copyGame(game, color1, color2);
@@ -29,8 +30,9 @@ Direction Bot::getMove(const Game &game, TileColor color1, TileColor color2, dou
     int position = 0;
     Direction bestMove = Direction::DOWN;
     double maxEval = -std::numeric_limits<double>::infinity();
+    // std::cout << "time: " << clock.getElapsedTime().asMilliseconds() << std::endl;
     for (Direction dir: tempGameState->getPossibleMove(tempGameState->bot)) {
-        //std::cout << "get Move loop: " << dir << std::endl;
+        // std::cout << "get Move loop: " << dir << std::endl;
         if (exceedTimeLimit(clock)) {
             return bestMove;
         }

@@ -19,7 +19,7 @@ class GameController {
         const double BOT_LIMIT = 700.0;
 
         const int H = 15;
-        const int W = 15;
+        const int W = 20;
 
         sf::RenderWindow window;
         sf::Font uiFont;
@@ -41,7 +41,7 @@ class GameController {
         }
 
         void createRandomWall() {
-            int walkNo = random() % 11;
+            int walkNo = random() % 5;
             for (int i = 0; i < walkNo; ++i) {
                 int w = random() % (W - 4) + 2;
                 int h = random() % (H - 4) + 2;
@@ -199,7 +199,7 @@ class GameController {
         void gameLoop() {
             //clock, how fast the game goes
             sf::Clock clock;
-            
+
             while (window.isOpen()) {
                 while (const std::optional event = window.pollEvent()) {
                     // close the window
@@ -228,7 +228,6 @@ class GameController {
                             break;
                         }
                     }
-
                 }
 
                 drawGame();

@@ -19,7 +19,7 @@ class Bot: public Player {
 
         double minimax(int depth, bool maximizingPlayer, sf::Clock &clock, int &position);
 
-        double evaluate();
+        double virtual evaluate();
 
         bool exceedTimeLimit(sf::Clock &clock);
 

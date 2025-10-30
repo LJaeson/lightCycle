@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <ctime>
 
-#define MAX_DEPTH 10
+#define MAX_DEPTH 20
 
 Bot::Bot(int w, int h): game(w, h) {
     srand(time(0));
@@ -97,6 +97,13 @@ double Bot::evaluate() {
     } else if (game.getCrashed(game.oponent.location)) {
         return 100;
     }
-    return 50;
+    int freeSpaceCount = 0;
+    for (int i = 0; i < Direction::LEFT; i++) {
+        Location l = game.bot.findNextLocationFromDirection((Direction) i);
+        if (game.grid[l.w][l.h] == TileColor::NOPE) {
+            ++freeSpaceCount;
+        }
+    }
+    return 10 * (5 - freeSpaceCount);
     // return 5 * game.getPossibleMove(game.bot).size();
 }

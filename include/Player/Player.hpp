@@ -1,6 +1,8 @@
 #pragma once
 #include <lightCycle/lightCycle.hh>
-#include <lightCycle/Game.hpp>
+
+// Forward declaration to avoid circular dependency
+class Game;
 
 class Player {
     public:

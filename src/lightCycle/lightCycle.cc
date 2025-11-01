@@ -6,6 +6,7 @@
 #include <lightCycle/Game.hpp>
 #include <functional>
 #include <future>
+#include <thread>
 
 class GameController {
     private:
@@ -16,8 +17,8 @@ class GameController {
         const double TICK_STEP = 800.0;
         const double BOT_LIMIT = 700.0;
 
-        const int H = 15;
-        const int W = 15;
+        const int H = 30;
+        const int W = 30;
 
         sf::RenderWindow window;
         sf::Font uiFont;
@@ -137,13 +138,13 @@ class GameController {
             std::future<Direction> fut2;
 
             if (!player1->clientControlled()) {
-                fut1 = std::async(std::launch::async, [this]() {
+                fut1 = std::async(std::launch::async, [this]() -> Direction {
                     return player1->getMove(game, game.getPlayer1().getColor(), game.getPlayer2().getColor(), BOT_LIMIT);
                 });
             }
 
             if (!player2->clientControlled()) {
-                fut2 = std::async(std::launch::async, [this]() {
+                fut2 = std::async(std::launch::async, [this]() -> Direction {
                     return player2->getMove(game, game.getPlayer2().getColor(), game.getPlayer1().getColor(), BOT_LIMIT);
                 });
             }

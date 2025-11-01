@@ -47,11 +47,11 @@ struct Location {
     bool equal(const Location &l) const {
         return w == l.w && h == l.h;
     }
-    
-    // added comparison operator for use in std::set (survival mode)
-    bool operator<(const Location &l) const {
-        if (w != l.w) return w < l.w;
-        return h < l.h;
+
+    // Comparison operator for use in std::set
+    bool operator<(const Location &other) const {
+        if (w != other.w) return w < other.w;
+        return h < other.h;
     }
 };
 

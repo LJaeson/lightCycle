@@ -28,7 +28,8 @@ class Bot: public Player {
 
         bool isTerminal();
 
-        double minimax(int depth, bool maximizingPlayer, sf::Clock &clock, int &position);
+        double minimax(int depth, bool maximizingPlayer, sf::Clock &clock, int &position, 
+                       double alpha, double beta);
 
         // evaluation function to uses survival mode
         double evaluate();
@@ -60,10 +61,18 @@ class Bot: public Player {
         // utility functions for survival mode
         bool arePlayersInDifferentComponents();  // bfs component detection
         int floodFillCount(Location start);      // count reachable squares
+        int floodFillCountFast(Location start, int maxIter);  // OPTIMIZATION: faster flood fill with iteration limit
         double distanceToOpponent();              // manhattan distance calculation
         bool isValidLocation(Location loc);       // bounds checking
         std::vector<Location> getNeighbors(Location loc);  // Get 4-direction neighbours
         
         // main survival evaluation function (called by evaluate())
         double evaluateSurvival();
+        double evaluateSurvivalFast();  // OPTIMIZATION: Fast evaluation without expensive BFS/DFS
+        
+        // OPTIMIZED: Fast versions of the algorithms for real-time minimax
+        double evaluateVoronoiFast();              // Voronoi with 100 iterations
+        double evaluateArticulationPointsFast();   // Check immediate position + look-ahead
+        double evaluateLongestPathFast();          // Fast flood fill approximation
+        double evaluateBoardCoverage();            // Encourages spreading across entire board
 };

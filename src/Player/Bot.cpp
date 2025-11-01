@@ -8,8 +8,9 @@
 #include <set>
 #include <cmath>
 
-// reduced from 10 to 6 for better performance (256x fewer nodes at max depth)
-#define MAX_DEPTH 6
+#define MAX_DEPTH 5 // for better lookahead, collision avoidance, allows the bot to see 5 moves ahead
+
+#define USE_ALPHA_BETA_PRUNING true
 
 Bot::Bot(int w, int h): game(w, h) {
     srand(time(0));
@@ -27,19 +28,105 @@ Direction Bot::getMove(const Game &gameState, TileColor color1, TileColor color2
     int position = 0;
     Direction bestMove = Direction::DOWN;
     double maxEval = -std::numeric_limits<double>::infinity();
-    for (Direction dir: game.getPossibleMove(game.bot)) {
-        //std::cout << "get Move loop: " << dir << std::endl;
+    double alpha = -std::numeric_limits<double>::infinity();
+    double beta = std::numeric_limits<double>::infinity();
+    
+    // CRITICAL SAFETY CHECK: Pre-filter obviously suicidal moves
+    // Check each move for immediate death or severe space reduction
+    std::vector<Direction> possibleMoves = game.getPossibleMove(game.bot);
+    std::vector<std::pair<Direction, double>> safeMoves;
+    
+    int currentSpace = floodFillCountFast(game.bot.location, 120);
+    
+    for (Direction dir : possibleMoves) {
+        game.move(game.bot, dir);
+        
+        // check if this move leads to immediate death or trap
+        int movesAfter = game.getPossibleMove(game.bot).size();
+        int spaceAfter = floodFillCountFast(game.bot.location, 100);
+        
+        double safetyScore = 0.0;
+        
+        // 0 moves left 
+        if (movesAfter == 0) {
+            safetyScore = -100000.0;  
+        }
+        // 1 move left
+        else if (movesAfter == 1) {
+            safetyScore = -10000.0;  
+        }
+        // 2 moves left
+        else if (movesAfter == 2) {
+            safetyScore = -5000.0; 
+        }
+        // 3 moves left
+        else if (movesAfter == 3) {
+            safetyScore = -1000.0; 
+        }
+        // space reduction scenarios
+        else if (spaceAfter < 10 && currentSpace > 30) {
+            safetyScore = -8000.0;  
+        }
+        else if (spaceAfter < 15 && currentSpace > 40) {
+            safetyScore = -5000.0;  
+        }
+        else if (spaceAfter < 20 && currentSpace > 50) {
+            safetyScore = -3000.0;  
+        }
+        else if (spaceAfter < 30 && currentSpace > 60) {
+            safetyScore = -1000.0;  
+        }
+        // reward keeping space
+        else {
+            if (spaceAfter > currentSpace * 0.8) {
+                safetyScore = 1000.0;  
+            } else if (spaceAfter > currentSpace * 0.6) {
+                safetyScore = 500.0;  
+            } else {
+                safetyScore = 0.0; 
+            }
+        }
+        
+        safeMoves.push_back({dir, safetyScore});
+        game.unmove();
+    }
+    
+    // sort moves by safety score (best -> worst)
+    std::sort(safeMoves.begin(), safeMoves.end(), 
+              [](const auto& a, const auto& b) { return a.second > b.second; });
+    
+    // evaluate moves using minimax, prioritise safer moves
+    for (const auto& [dir, safetyScore] : safeMoves) {
         if (exceedTimeLimit(clock)) {
             return bestMove;
         }
+        
+        // skip deadly moves unless only option
+        if (safetyScore <= -100000.0 && safeMoves.size() > 1) {
+            continue; 
+        }
+        // skip almost-deadly moves if we have safer options
+        if (safetyScore <= -5000.0 && safeMoves.size() > 2) {
+            continue;  // Very dangerous - skip if we have alternatives
+        }
+        // skip risky moves if we have 2+ safer options
+        if (safetyScore <= -1000.0 && safeMoves.size() > 3) {
+            continue; 
+        }
+        
         game.move(game.bot, dir);
-        double eval = minimax(MAX_DEPTH, false, clock, position);
+        double eval = minimax(MAX_DEPTH, false, clock, position, alpha, beta);
+        
+        // safety score bonus
+        eval += safetyScore;
+        
         if (eval > maxEval) {
             maxEval = eval;
             bestMove = dir;
         } else if (eval == maxEval && rand() % 2 == 1) {
             bestMove = dir;
         }
+        alpha = std::max(alpha, eval);
         game.unmove();
     }
     std::cout << position << std::endl;
@@ -63,7 +150,7 @@ bool Bot::exceedTimeLimit(sf::Clock &clock) {
     return clock.getElapsedTime().asMilliseconds() >= timeLimit;
 }
 
-double Bot::minimax(int depth, bool maximizingPlayer, sf::Clock &clock, int &position) {
+double Bot::minimax(int depth, bool maximizingPlayer, sf::Clock &clock, int &position, double alpha, double beta) {
     if (isTerminal() || depth == 0 || exceedTimeLimit(clock)) {
         return evaluate();
     }
@@ -72,8 +159,12 @@ double Bot::minimax(int depth, bool maximizingPlayer, sf::Clock &clock, int &pos
         double maxEval = -std::numeric_limits<double>::infinity();
         for (Direction dir: game.getPossibleMove(game.bot)) {
             game.move(game.bot, dir);
-            maxEval = std::max(maxEval, minimax(depth - 1, false, clock, position));
+            maxEval = std::max(maxEval, minimax(depth - 1, false, clock, position, alpha, beta));
             game.unmove();
+            alpha = std::max(alpha, maxEval);
+            if (beta <= alpha) {
+                break; // beta cutoff - opp. won't allow this path
+            }
         }
         return maxEval;
 
@@ -81,8 +172,12 @@ double Bot::minimax(int depth, bool maximizingPlayer, sf::Clock &clock, int &pos
         double minEval = std::numeric_limits<double>::infinity();
         for (Direction dir: game.getPossibleMove(game.oponent)) {
             game.move(game.oponent, dir);
-            minEval = std::min(minEval, minimax(depth - 1, true, clock, position));
+            minEval = std::min(minEval, minimax(depth - 1, true, clock, position, alpha, beta));
             game.unmove();
+            beta = std::min(beta, minEval);
+            if (beta <= alpha) {
+                break; // alpha cutoff - we won't choose this path
+            }
         }
         return minEval;
     }
@@ -102,15 +197,212 @@ double Bot::evaluate() {
     } else if (game.getCrashed(game.oponent.location)) {
         return 100;
     }
-    
-    // changed from simple heuristic to survival mode evaluation
+
     return evaluateSurvival();
+}
+
+// ==================== SURVIVAL ====================
+// 
+// used in evaluateSurvival:
+// 1. flood fill (BFS) - space estimation with 100-120 iteration limits
+// 2. stage detection - board fill ratio + component separation
+// 3. early game : voronoi partitioning (multi-source BFS, 100 iterations)
+// 4. mid game: articulation point detection (DFS chokepoint check + look-ahead)
+// 5. end game: space filling maximises reachable territory
+// 6. self-trap prevention: look-ahead checking space after each move
+// 7. board coverage: encourages using entire board, no clustering
+//
+// ============================================================
+
+// helper: calculate which quadrants the bot has covered, promotes coveriing more area
+double Bot::evaluateBoardCoverage() {
+    double score = 0.0;
+    
+    
+    // get center of mass of all empty tiles
+    int emptyCount = 0;
+    double emptyCenterW = 0.0;
+    double emptyCenterH = 0.0;
+    
+    for (int w = 0; w < game.w; w++) {
+        for (int h = 0; h < game.h; h++) {
+            Location loc = {w, h};
+            if (!game.getCrashed(loc)) {
+                emptyCenterW += w;
+                emptyCenterH += h;
+                emptyCount++;
+            }
+        }
+    }
+    
+    if (emptyCount > 0) {
+        emptyCenterW /= emptyCount;
+        emptyCenterH /= emptyCount;
+    }
+    
+    // find how far each player is from the empty space center
+    double botDistToEmpty = std::abs(game.bot.location.w - emptyCenterW) + 
+                           std::abs(game.bot.location.h - emptyCenterH);
+    double opDistToEmpty = std::abs(game.oponent.location.w - emptyCenterW) + 
+                          std::abs(game.oponent.location.h - emptyCenterH);
+    
+    // reward for being closer to empty space
+    score += (opDistToEmpty - botDistToEmpty) * 0.5;
+    
+    // === QUADRANT BASED SEPARATION ===
+    int centerW = game.w / 2;
+    int centerH = game.h / 2;
+    
+    bool botLeft = game.bot.location.w < centerW;
+    bool botTop = game.bot.location.h < centerH;
+    bool opLeft = game.oponent.location.w < centerW;
+    bool opTop = game.oponent.location.h < centerH;
+    
+    // large penalty for being in same quadrant to avoid collision
+    if (botLeft == opLeft && botTop == opTop) {
+        score -= 50.0; 
+    }
+    // penalise for same horizontal or vertical half
+    else if (botLeft == opLeft || botTop == opTop) {
+        score -= 20.0;  
+    }
+    
+    // reawrd for diagonal quadrants (best separation)
+    if (botLeft != opLeft && botTop != opTop) {
+        score += 25.0;
+    }
+    
+    return score;
+}
+
+// fast eval that uses bfs with fewer iterations, no voronoi, no articul. pts, no component detection
+// used to avoid lag 
+double Bot::evaluateSurvivalFast() {
+    double score = 0.0;
+    
+    // prioritise space claiming over distance
+    // space estimate using flood fill with very low iteration limit
+    int botSpace = floodFillCountFast(game.bot.location, 80);  // increased from 50 to 80
+    int opSpace = floodFillCountFast(game.oponent.location, 80);
+    score += (botSpace - opSpace) * 5.0;  // increased weight from 2.0 to 5.0
+    
+    // count immediate moves available (avoid dead ends)
+    int botMoves = game.getPossibleMove(game.bot).size();
+    int opMoves = game.getPossibleMove(game.oponent).size();
+    score += (botMoves - opMoves) * 15.0;  // increased from 10.0 to 15.0
+    
+    // dist bonus 
+    double dist = distanceToOpponent();
+    score += dist * 0.5;  // decreased from 1.5 to 0.5
+    
+    return score;
+}
+
+// ==================== OPTIMISED FAST VERSIONS OF ALGORITHMS ====================
+
+// voronoi: better territory assessment, more iterations
+double Bot::evaluateVoronoiFast() {
+    std::queue<std::pair<Location, int>> bfsQueue;
+    std::vector<std::vector<int>> distances(game.w, std::vector<int>(game.h, -1));
+    std::vector<std::vector<int>> owner(game.w, std::vector<int>(game.h, -1));
+    
+    // BFS from both players simultaneously
+    bfsQueue.push({game.bot.location, 0});
+    bfsQueue.push({game.oponent.location, 1});
+    distances[game.bot.location.w][game.bot.location.h] = 0;
+    distances[game.oponent.location.w][game.oponent.location.h] = 0;
+    owner[game.bot.location.w][game.bot.location.h] = 0;
+    owner[game.oponent.location.w][game.oponent.location.h] = 1;
+    
+    int botTerritory = 0;
+    int opTerritory = 0;
+    int maxIterations = 100; 
+    int iterations = 0;
+    
+    while (!bfsQueue.empty() && iterations < maxIterations) {
+        auto [loc, playerID] = bfsQueue.front();
+        bfsQueue.pop();
+        iterations++;
+        
+        for (Location neighbor : getNeighbors(loc)) {
+            if (isValidLocation(neighbor) && !game.getCrashed(neighbor)) {
+                int newDist = distances[loc.w][loc.h] + 1;
+                
+                if (distances[neighbor.w][neighbor.h] == -1) {
+                    distances[neighbor.w][neighbor.h] = newDist;
+                    owner[neighbor.w][neighbor.h] = playerID;
+                    bfsQueue.push({neighbor, playerID});
+                    
+                    if (playerID == 0) botTerritory++;
+                    else opTerritory++;
+                } else if (distances[neighbor.w][neighbor.h] == newDist && owner[neighbor.w][neighbor.h] != playerID) {
+                    owner[neighbor.w][neighbor.h] = -1;  // Contested
+                    if (playerID == 0 && botTerritory > 0) botTerritory--;
+                    else if (playerID == 1 && opTerritory > 0) opTerritory--;
+                }
+            }
+        }
+    }
+    
+    return (double)(botTerritory - opTerritory);
+}
+
+// articulation points: check chokepoints with look-ahead
+double Bot::evaluateArticulationPointsFast() {
+    double score = 0.0;
+    
+    // check if current position is a chokepoint 
+    if (isArticulationPoint(game.bot.location)) {
+        score -= 30.0;  // penalise for being in dangerous chokepoint
+    }
+    
+    // reward for multiple escape routes 
+    int availableMoves = game.getPossibleMove(game.bot).size();
+    score += availableMoves * 12.0;
+    
+    // look ahead at space after each move to avoid trapping
+    int bestSpaceAfterMove = 0;
+    int worstSpaceAfterMove = 999;
+    for (Direction dir : game.getPossibleMove(game.bot)) {
+        game.move(game.bot, dir);
+        int spaceAfterMove = floodFillCountFast(game.bot.location, 80);
+        bestSpaceAfterMove = std::max(bestSpaceAfterMove, spaceAfterMove);
+        worstSpaceAfterMove = std::min(worstSpaceAfterMove, spaceAfterMove);
+        game.unmove();
+    }
+    
+    // reward moves that keep space available
+    score += bestSpaceAfterMove * 0.8;
+    
+    // penalise if all moves lead to low space
+    if (worstSpaceAfterMove < 10 && availableMoves > 1) {
+        score -= 25.0;
+    }
+    
+    // check if opponent is in a chokepoint
+    if (isArticulationPoint(game.oponent.location)) {
+        score += 20.0;
+    }
+    
+    return score;
+}
+
+// longest path: fast flood fill instead of DFS
+double Bot::evaluateLongestPathFast() {
+    // approx longest path with reachable space count
+    int botSpace = floodFillCountFast(game.bot.location, 100);  
+    int opSpace = floodFillCountFast(game.oponent.location, 100);
+    
+    // In endgame, heavily prioritize having more space
+    return (double)(botSpace - opSpace);
 }
 
 // ==================== SURVIVAL MODE IMPLEMENTATION ====================
 
 // some current problems: bot can be little dumb, it traps itself, 
 // and towards endgame the bot goes out of bounds 
+// not used in 30x30 because it lags too much, but the results of this were better 
+// and more 'optimal' (filled more spaces) than the optimised survival mode above
 
 Bot::GameStage Bot::determineGameStage() {
     // count total occupied squares
@@ -141,31 +433,162 @@ Bot::GameStage Bot::determineGameStage() {
     }
 }
 
+// optimised versions are used here 
 double Bot::evaluateSurvival() {
     GameStage stage = determineGameStage();
     double score = 0.0;
     
-    // reward staying away from opponent
-    double distBonus = distanceToOpponent() * 2.0;
-    score += distBonus;
+    // calcualte once, use multiple times for better performance 
+    int botMoves = game.getPossibleMove(game.bot).size();
+    int opMoves = game.getPossibleMove(game.oponent).size();
+    double dist = distanceToOpponent();
     
-    // evaluate based on stage
-    switch (stage) {
-        case EARLY_GAME:
-            score += evaluateVoronoi() * 3.0;
-            break;
-        case MID_GAME:
-            score += evaluateArticulationPoints() * 2.5;
-            break;
-        case END_GAME:
-            score += evaluateLongestPath() * 4.0;
-            break;
+    // aAlways evaluate reachable space to avoid self-trapping
+    int botSpace = floodFillCountFast(game.bot.location, 120);
+    int opSpace = floodFillCountFast(game.oponent.location, 120);
+    
+    // self trap detection with look ahead 
+    // look at space, mobility avail after each possible move
+    int maxSpaceAfterMove = 0;
+    int maxMovesAfterMove = 0;
+    int minSpaceAfterMove = 999;
+    int minMovesAfterMove = 999;
+    
+    // count how many moves lead to danger
+    int deadlyMoves = 0;
+    int dangerousMoves = 0;
+    int totalPossibleMoves = game.getPossibleMove(game.bot).size();
+    
+    for (Direction dir : game.getPossibleMove(game.bot)) {
+        game.move(game.bot, dir);
+        int spaceAfter = floodFillCountFast(game.bot.location, 120);
+        int movesAfter = game.getPossibleMove(game.bot).size();
+        
+        maxSpaceAfterMove = std::max(maxSpaceAfterMove, spaceAfter);
+        maxMovesAfterMove = std::max(maxMovesAfterMove, movesAfter);
+        minSpaceAfterMove = std::min(minSpaceAfterMove, spaceAfter);
+        minMovesAfterMove = std::min(minMovesAfterMove, movesAfter);
+        
+        // count risky moves
+        if (movesAfter == 0) {
+            deadlyMoves++;
+        } else if (movesAfter <= 2) {
+            dangerousMoves++;
+        }
+        
+        game.unmove();
     }
     
-    // bonus for having more available space
-    int botSpace = floodFillCount(game.bot.location);
-    int opSpace = floodFillCount(game.oponent.location);
-    score += (botSpace - opSpace) * 1.5;
+    // penalise based on how many bad options we have 
+    
+    // move that leads to immediate death
+    if (deadlyMoves > 0) {
+        score -= deadlyMoves * 15000.0; 
+    }
+    
+    // dangerous moves (1-2 mobility after)
+    if (dangerousMoves > 0) {
+        score -= dangerousMoves * 500.0;  
+    }
+    
+    // if best option still has low mobility
+    if (maxMovesAfterMove <= 2) {
+        score -= 2000.0;  
+    } else if (maxMovesAfterMove == 3) {
+        score -= 800.0;   
+    }
+    
+    // if all moves lead to low space, cornered
+    if (minSpaceAfterMove < 20 && botSpace > 40) {
+        score -= 3000.0;  
+    } else if (minSpaceAfterMove < 30 && botSpace > 60) {
+        score -= 1500.0;  
+    }
+    
+    // if our best move still loses lots of space
+    if (maxSpaceAfterMove < botSpace * 0.5 && botSpace > 30) {
+        score -= 2000.0;  
+    } else if (maxSpaceAfterMove < botSpace * 0.7 && botSpace > 50) {
+        score -= 1000.0;  
+    }
+    
+    // prio 1: claim space 
+    score += (botSpace - opSpace) * 12.0;
+    
+    // reward the move that keeps maximum space open
+    score += maxSpaceAfterMove * 3.0;  
+    
+    // prio 2: avoid dead ends
+    score += (botMoves - opMoves) * 18.0;
+    
+    // reward future mobility 
+    score += maxMovesAfterMove * 20.0;  
+    
+    // penalties for low mobility
+    if (botMoves <= 1) {
+        score -= 300.0;  
+    } else if (botMoves == 2) {
+        score -= 120.0; 
+    } else if (botMoves == 3) {
+        score -= 40.0;   
+    }
+    
+    // prio 3: avoid collision
+    // penalties for being close 
+    if (dist < 2.0) {
+        score -= 150.0;  
+    } else if (dist < 3.0) {
+        score -= 80.0;  
+    } else if (dist < 5.0) {
+        score -= 30.0;   
+    } else if (dist < 8.0) {
+        score -= 10.0;  
+    }
+    
+    // reward  maintaining good distance
+    if (dist > 8.0) {
+        score += dist * 0.8;  
+    } else if (dist > 5.0) {
+        score += dist * 0.3;
+    }
+    
+    // Penalty for very low space
+    if (botSpace < 20) {
+        score -= (20 - botSpace) * 15.0;
+    }
+    
+    // encourage board coverage, prevent clustering
+    score += evaluateBoardCoverage() * 3.5; 
+    
+    // === stage-specific eval ===
+    switch (stage) {
+        case EARLY_GAME:
+            // voronoi: claim as much space as possible
+            score += evaluateVoronoiFast() * 3.0;
+            score += botSpace * 1.0;
+            // encourage separation to different quadrants
+            score += evaluateBoardCoverage() * 4.0;  
+            // avoid opponent more aggressively
+            if (dist < 10.0) {
+                score -= (10.0 - dist) * 8.0;  
+            }
+            break;
+            
+        case MID_GAME:
+            // articulation points: maintain escape routes
+            score += evaluateArticulationPointsFast() * 3.0;
+            score += botSpace * 1.0;
+            break;
+            
+        case END_GAME:
+            // longest path: maximise space filling in own territory
+            score += botSpace * 2.5;
+            // avoid the opponent 
+            if (dist < 5.0) {
+                score -= (5.0 - dist) * 25.0;
+            }
+            break;
+    }
     
     return score;
 }
@@ -180,7 +603,7 @@ double Bot::evaluateVoronoi() {
     std::queue<std::pair<Location, int>> bfsQueue;
     std::vector<std::vector<int>> owner(game.w, std::vector<int>(game.h, -1)); // 0=bot, 1=oponent, -1=unowned
     
-    // Start bfs from both players simultaneously
+    // tart bfs from both players simultaneously
     bfsQueue.push({game.bot.location, 0});
     bfsQueue.push({game.oponent.location, 1});
     distances[game.bot.location.w][game.bot.location.h] = 0;
@@ -305,6 +728,34 @@ int Bot::floodFillCount(Location start) {
     int maxCount = 200; 
     
     while (!q.empty() && count < maxCount) {
+        Location current = q.front();
+        q.pop();
+        count++;
+        
+        for (Location neighbor : getNeighbors(current)) {
+            if (isValidLocation(neighbor) && !game.getCrashed(neighbor)) {
+                auto key = std::make_pair(neighbor.w, neighbor.h);
+                if (visited.find(key) == visited.end()) {
+                    visited.insert(key);
+                    q.push(neighbor);
+                }
+            }
+        }
+    }
+    
+    return count;
+}
+
+// fast flood fill with iteration limit
+int Bot::floodFillCountFast(Location start, int maxIter) {
+    std::set<std::pair<int,int>> visited;
+    std::queue<Location> q;
+    
+    q.push(start);
+    visited.insert({start.w, start.h});
+    int count = 0;
+    
+    while (!q.empty() && count < maxIter) {
         Location current = q.front();
         q.pop();
         count++;

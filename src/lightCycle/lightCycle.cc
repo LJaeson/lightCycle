@@ -233,7 +233,7 @@ class GameController {
 
 int main(int argc, char* argv[]) {
 
-    GameController controller("Bot", "Bot");
+    GameController controller("Bot", "Bot");  // Client vs Bot mode
 
     std::filesystem::path exeDir = std::filesystem::absolute(argv[0]).parent_path();
     std::string path = (exeDir / "resources" / "MinecraftRegular.otf").string();

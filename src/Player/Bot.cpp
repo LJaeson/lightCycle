@@ -8,7 +8,7 @@
 #include <set>
 #include <cmath>
 
-#define MAX_DEPTH 5 // for better lookahead, collision avoidance, allows the bot to see 5 moves ahead
+#define MAX_DEPTH 5 // allows the bot to see 5 moves ahead
 
 #define USE_ALPHA_BETA_PRUNING true
 
@@ -31,8 +31,7 @@ Direction Bot::getMove(const Game &gameState, TileColor color1, TileColor color2
     double alpha = -std::numeric_limits<double>::infinity();
     double beta = std::numeric_limits<double>::infinity();
     
-    // CRITICAL SAFETY CHECK: Pre-filter obviously suicidal moves
-    // Check each move for immediate death or severe space reduction
+    // pre-filter deadly moves
     std::vector<Direction> possibleMoves = game.getPossibleMove(game.bot);
     std::vector<std::pair<Direction, double>> safeMoves;
     
@@ -107,7 +106,7 @@ Direction Bot::getMove(const Game &gameState, TileColor color1, TileColor color2
         }
         // skip almost-deadly moves if we have safer options
         if (safetyScore <= -5000.0 && safeMoves.size() > 2) {
-            continue;  // Very dangerous - skip if we have alternatives
+            continue;  
         }
         // skip risky moves if we have 2+ safer options
         if (safetyScore <= -1000.0 && safeMoves.size() > 3) {
@@ -258,7 +257,7 @@ double Bot::evaluateBoardCoverage() {
     bool opLeft = game.oponent.location.w < centerW;
     bool opTop = game.oponent.location.h < centerH;
     
-    // large penalty for being in same quadrant to avoid collision
+    // big penalty for being in same quadrant - forces separation
     if (botLeft == opLeft && botTop == opTop) {
         score -= 50.0; 
     }
@@ -271,29 +270,6 @@ double Bot::evaluateBoardCoverage() {
     if (botLeft != opLeft && botTop != opTop) {
         score += 25.0;
     }
-    
-    return score;
-}
-
-// fast eval that uses bfs with fewer iterations, no voronoi, no articul. pts, no component detection
-// used to avoid lag 
-double Bot::evaluateSurvivalFast() {
-    double score = 0.0;
-    
-    // prioritise space claiming over distance
-    // space estimate using flood fill with very low iteration limit
-    int botSpace = floodFillCountFast(game.bot.location, 80);  // increased from 50 to 80
-    int opSpace = floodFillCountFast(game.oponent.location, 80);
-    score += (botSpace - opSpace) * 5.0;  // increased weight from 2.0 to 5.0
-    
-    // count immediate moves available (avoid dead ends)
-    int botMoves = game.getPossibleMove(game.bot).size();
-    int opMoves = game.getPossibleMove(game.oponent).size();
-    score += (botMoves - opMoves) * 15.0;  // increased from 10.0 to 15.0
-    
-    // dist bonus 
-    double dist = distanceToOpponent();
-    score += dist * 0.5;  // decreased from 1.5 to 0.5
     
     return score;
 }
@@ -336,7 +312,7 @@ double Bot::evaluateVoronoiFast() {
                     if (playerID == 0) botTerritory++;
                     else opTerritory++;
                 } else if (distances[neighbor.w][neighbor.h] == newDist && owner[neighbor.w][neighbor.h] != playerID) {
-                    owner[neighbor.w][neighbor.h] = -1;  // Contested
+                    owner[neighbor.w][neighbor.h] = -1;  
                     if (playerID == 0 && botTerritory > 0) botTerritory--;
                     else if (playerID == 1 && opTerritory > 0) opTerritory--;
                 }

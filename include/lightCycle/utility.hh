@@ -36,6 +36,12 @@ struct Location {
     bool equal(Location l) {
         return (w == l.getW()) && (h == l.getH());
     }
+
+    // Comparison operator for use in std::set
+    bool operator<(const Location &other) const {
+        if (w != other.w) return w < other.w;
+        return h < other.h;
+    }
 };
 
 extern int dw[4];

@@ -1,13 +1,19 @@
+#include <lightCycle/lightCycle.hh>
 #include <lightCycle/Game.hh>
+#include <movable/Bot.hh>
+#include <movable/Bot2.hh>
+#include <movable/Bot3.hh>
+#include <movable/Bot4.hh>
 #include <future>
+
 
 // ---------- Game ----------
 Game::Game(int w, int h, Location p1Start, Location p2Start)
     : tickQueue{}, 
 
     // p1(new Player(p1Start, TileColor::BLUE)),
-    p1(new Bot(p1Start, {w, h}, TileColor::BLUE)),
-    p2(new Bot(p2Start, {w, h}, TileColor::GREEN)),
+    p1(new Bot2(p1Start, {w, h}, TileColor::BLUE)),
+    p2(new Bot4(p2Start, {w, h}, TileColor::GREEN)),
     map{w,h} 
     {
         map.createRandomWall();
@@ -37,8 +43,8 @@ void Game::moveActor_() {
 void Game::botPlaying_() {
     if (p1->isPlayer() && p2->isPlayer()) return;
     sf::Clock clock;
-    std::future<Direction> fut1;
-    std::future<Direction> fut2;
+    std::future<BotPlayingReturn> fut1;
+    std::future<BotPlayingReturn> fut2;
 
     if (p1->isBot()) {
         fut1 = std::async(std::launch::async, [this]() {
@@ -53,24 +59,22 @@ void Game::botPlaying_() {
     }
 
     if (p1->isBot()) {
-        getPlayer1().changeDirection(fut1.get());
-        std::cout << "Bot 1 time: " << clock.getElapsedTime().asMilliseconds() << std::endl;
+        BotPlayingReturn move = fut1.get();
+        // std::cout << "Bot 1: " << move.returnString();
+        getPlayer1().changeDirection(move.dir);
     }
     if (p2->isBot()) {
-        getPlayer2().changeDirection(fut2.get());
-        std::cout << "Bot 2 time: " << clock.getElapsedTime().asMilliseconds() << std::endl;
+        BotPlayingReturn move = fut2.get();
+        // std::cout << "Bot 2: " << move.returnString();
+        getPlayer2().changeDirection(move.dir);
     }
-
-    std::cout << "Total time: " << clock.getElapsedTime().asMilliseconds() << std::endl;
 }
 
 void Game::checkDeath_() {
     bool t1 = p1->isDead(map);
     bool t2 = p2->isDead(map);
 
-    if (!t1 && !t2) return;
-
-    if (t1 && t2) { std::cout << "Draw"; terminateCode = 1; }
+    if (p1->equalLocation(*p2) || (t1 && t2)) { std::cout << "Draw"; terminateCode = 1; }
     else if (t1)    { std::cout << "p2 win"; terminateCode = 2; }
     else if (t2)    { std::cout << "p1 win"; terminateCode = 3; }
 }

@@ -23,5 +23,9 @@ void Actor::changeCurrentTile(Map& map) {
     map.addLocation(position.location);
 }
 
+bool Actor::equalLocation(Actor &a) {
+    return position.location.equal(a.position.location);
+}
+
 void Actor::doNextLocation() { position.doNextLocation(); }
 void Actor::changeDirection(Direction d) { position.changeDirection(d); }

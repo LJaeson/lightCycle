@@ -1,10 +1,30 @@
 #pragma once
 #include <lightCycle/Map.hh>
 #include <lightCycle/utility.hh>
-// #include <lightCycle/Game.hh>
+#include <string>
+
 
 class Game;  // forward declaration
 
+#define BOT_OWNER 2
+#define OPP_OWNER 1
+#define EQUAL_OWNER 0 
+#define UNVISIT -1
+
+struct BotPlayingReturn {
+    Direction dir;
+    int positionCount;
+    int time; // as millisecond
+
+    std::string returnString() {
+        return "Position count: " + std::to_string(positionCount) + ", Time taken: " + std::to_string(time) + " ms\n";
+    }
+};
+
+struct ComponentInfo {
+    int distToNearestPlayer;
+    int owner;
+};
 
 class Actor {
 protected:
@@ -22,12 +42,14 @@ public:
     void doNextLocation();
     void changeDirection(Direction d);
 
+    bool equalLocation(Actor &a);
+
     virtual bool isPlayer() {return false;};
     virtual bool isBot() {return false;};
     TileColor getColor() const { return actorColor; };
 
     //dummy, only useful for bot
-    virtual Direction getMove(const Game &game, TileColor color1, TileColor color2, double timeLimit) {
-        return Direction::UP; 
+    virtual BotPlayingReturn getMove(const Game &game, TileColor color1, TileColor color2, double timeLimit) {
+        return { Direction::UP, 0, 0}; 
     }
 };

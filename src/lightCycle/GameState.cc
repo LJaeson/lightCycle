@@ -14,6 +14,8 @@ GameState::GameState(Location l) {
 }
 
 void GameState::copyGame(const Game &game, TileColor botColor, TileColor opColor) {
+    bot.initPosition(-1, -1);
+    oponent.initPosition(-1, -1);
     MapTypes::Grid gameMap = game.getMapGrid();
 
     for (int i = 0; i < w; ++i) {
@@ -38,9 +40,8 @@ bool GameState::getCrashed(Location l) {
     return grid[l.w][l.h] == TileColor::BOUNDARY;
 }
 
-std::vector<Direction> GameState::getPossibleMove(Position &pos) {
+std::vector<Direction> GameState::getMove(Position &pos) {
     std::vector<Direction> moves;
-    // std::cout << pos.location.w << " " << pos.location.h << std::endl;
     for (int i = 0; i <= Direction::LEFT; ++i) {
         moves.push_back((Direction) i);
     }
@@ -70,4 +71,14 @@ void GameState::unmove() {
     grid[l.w][l.h] = TileColor::NOPE;
 
     moveStack.pop();
+}
+
+std::vector<Direction> GameState::getPossibleMove(Position &pos) {
+    std::vector<Direction> moves;
+    for (int i = 0; i <= Direction::LEFT; ++i) {
+        if (!getCrashed(pos.findNextLocationFromDirection((Direction) i))) {
+            moves.push_back((Direction) i);
+        }
+    }
+    return moves;
 }

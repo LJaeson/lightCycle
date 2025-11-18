@@ -88,7 +88,7 @@ void Map::changeTileColor(Location l, TileColor tileColor) {
 }
 
 void Map::createRandomWall() {
-    int walkNo = random() % 11;
+    int walkNo = random() % 5;
     for (int i = 0; i < walkNo; ++i) {
         int w = random() % (W - 4) + 2;
         int h = random() % (H - 4) + 2;

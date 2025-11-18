@@ -1,12 +1,10 @@
 #pragma once
-#include <lightCycle/lightCycle.hh>
+#include <functional>
 #include <lightCycle/Map.hh>
 #include <lightCycle/utility.hh>
 #include <movable/Player.hh>
-// #include <movable/Bot.hh>
+#include <memory>
 #include <iostream>
-
-class Bot;
 
 // #include <deque>
 // #include <iostream>

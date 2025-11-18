@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# set(CMAKE_BUILD_TYPE Debug)  # Debug mode
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -fsanitize=address")
+
 include(FetchContent)
 FetchContent_Declare(SFML
     GIT_REPOSITORY https://github.com/SFML/SFML.git
@@ -23,9 +26,11 @@ add_executable(light_cycle
     src/lightCycle/utility.cc
     src/movable/Actor.cc
     src/movable/Player.cc
-    src/movable/Bot.cc 
+    src/movable/Bot.cc
+    src/movable/Bot2.cc
+    src/movable/Bot3.cc
+    src/movable/Bot4.cc
     src/lightCycle/GameState.cc
-    src/movable/Bot2.cpp
 )
 
 target_compile_features(light_cycle PRIVATE cxx_std_17)

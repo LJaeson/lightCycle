@@ -117,6 +117,8 @@ public:
                     game.tick();
                     accumulator -= TICK_STEP;
                     window.clear();
+
+                    //this is for the temporary map show
                     GameState gamestate(W, H);
                     gamestate.copyGame(game, game.getPlayer1().getColor(), game.getPlayer2().getColor());
 

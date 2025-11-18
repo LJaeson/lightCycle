@@ -5,8 +5,8 @@
 Game::Game(int w, int h, Location p1Start, Location p2Start)
     : tickQueue{}, 
 
-    // p1(new Player(p1Start, TileColor::BLUE)),
-    p1(new Bot(p1Start, {w, h}, TileColor::BLUE)),
+    p1(new Player(p1Start, TileColor::BLUE)),
+    // p1(new Bot(p1Start, {w, h}, TileColor::BLUE)),
     p2(new Bot(p2Start, {w, h}, TileColor::GREEN)),
     map{w,h} 
     {

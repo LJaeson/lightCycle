@@ -9,15 +9,16 @@ GameState::GameState(int w, int h) {
 
 GameState::GameState(Location l) {
     this->w = l.getW();
-    this->h = l.getW();
+    this->h = l.getH();
     grid.resize(w, std::vector<TileColor>(h));
 }
 
 void GameState::copyGame(const Game &game, TileColor botColor, TileColor opColor) {
-    bot.initPosition(-1, -1);
-    oponent.initPosition(-1, -1);
+    bot.initPosition(0, 0);
+    oponent.initPosition(0, 0);
     MapTypes::Grid gameMap = game.getMapGrid();
-
+    std::cout << w << std::endl;
+    std::cout << h << std::endl;
     for (int i = 0; i < w; ++i) {
         for (int j = 0; j < h; ++j) {
             TileColor c = gameMap[i][j].tileColor;

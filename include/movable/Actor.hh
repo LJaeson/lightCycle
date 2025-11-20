@@ -33,6 +33,8 @@ protected:
     TileColor tileColor;
 
 public:
+    virtual ~Actor() = default;
+
     Actor(Location l, TileColor ac);
 
     bool isDead(Map& map);

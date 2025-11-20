@@ -45,6 +45,7 @@ sf::Color Map::getTileColor(TileColor tileColor) const {
         case BLUEACTOR:  return sf::Color(97,138,180);
         case LIGHTBLUE:  return sf::Color(153,204,255);
         case LIGHTGREEN: return sf::Color(153,255,170);
+        case GREY:       return sf::Color(211, 211, 211);
         default:         return sf::Color(0,0,0);
     }
 }
@@ -88,7 +89,7 @@ void Map::changeTileColor(Location l, TileColor tileColor) {
 }
 
 void Map::createRandomWall() {
-    int walkNo = random() % 5;
+    int walkNo = random() % 8;
     for (int i = 0; i < walkNo; ++i) {
         int w = random() % (W - 4) + 2;
         int h = random() % (H - 4) + 2;

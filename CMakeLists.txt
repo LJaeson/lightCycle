@@ -30,6 +30,7 @@ add_executable(light_cycle
     src/movable/Bot2.cc
     src/movable/Bot3.cc
     src/movable/Bot4.cc
+    src/movable/Bot5.cc
     src/lightCycle/GameState.cc
 )
 

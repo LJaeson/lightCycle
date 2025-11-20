@@ -129,7 +129,7 @@ BotPlayingReturn Bot::getMove(const Game &gameState, TileColor color1, TileColor
         alpha = std::max(alpha, eval);
         tempGameState->unmove();
     }
-    std::cout << position << std::endl;
+    // std::cout << position << std::endl;
     return { bestMove, position, clock.getElapsedTime().asMilliseconds() };
 }
 

@@ -6,7 +6,7 @@
 #include <ctime>
 #include <queue>
 
-#define MAX_DEPTH 15
+#define MAX_DEPTH 10
 
 
 Bot2::Bot2(Location l, Location mapSize, TileColor ac)

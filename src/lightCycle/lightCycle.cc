@@ -1,6 +1,7 @@
 #include <lightCycle/lightCycle.hh>
 #include <lightCycle/GameState.hh>
 #include <movable/Bot2.hh>
+#include <movable/Bot5.hh>
 #include <thread>
 
 const double BOT_LIMIT = 500.0;
@@ -15,8 +16,10 @@ private:
 
     int resultCount = false;
 
+    bool paused = false;
+
     const int H = 15;
-    const int W = 15;
+    const int W = 21;
 
     const unsigned int winW = 1000;
     const unsigned int winH = 800;
@@ -50,7 +53,7 @@ public:
 
     void playerInput(sf::Keyboard::Scancode key) {  // or sf::Keyboard::Scancode if you prefer
         // --- Player 1 (WASD)
-        if (game.getPlayer1().isPlayer()) {
+        if (game.getPlayer1().isPlayer() && !paused) {
             if (key == sf::Keyboard::Scancode::W) game.getPlayer1().changeDirection(Direction::UP);
             else if (key == sf::Keyboard::Scancode::A) game.getPlayer1().changeDirection(Direction::LEFT);
             else if (key == sf::Keyboard::Scancode::S) game.getPlayer1().changeDirection(Direction::DOWN);
@@ -58,7 +61,7 @@ public:
         }
 
         // --- Player 2 (Arrow keys)
-        if (game.getPlayer2().isPlayer()) {
+        if (game.getPlayer2().isPlayer() && !paused) {
             if (key == sf::Keyboard::Scancode::Up) game.getPlayer2().changeDirection(Direction::UP);
             else if (key == sf::Keyboard::Scancode::Left) game.getPlayer2().changeDirection(Direction::LEFT);
             else if (key == sf::Keyboard::Scancode::Down) game.getPlayer2().changeDirection(Direction::DOWN);
@@ -66,8 +69,12 @@ public:
         }
 
         // --- Restart game
-        if (key == sf::Keyboard::Scancode::Space && game.getTerminateCode() != 0) {
-            gameRestart();
+        if (key == sf::Keyboard::Scancode::Space) {
+            if (game.getTerminateCode() != 0 && !paused) {
+                gameRestart();
+            } else {
+                paused = paused ? false : true;
+            }
         }
     }
 
@@ -119,17 +126,21 @@ public:
 
             //game tick and graphic handle
             float delta = clock.restart().asMilliseconds();
-            accumulator += delta;
+            if (!paused) {
+                accumulator += delta;
+            }
 
-            if (game.getTerminateCode() == 0) {
+            if (game.getTerminateCode() == 0 && !paused) {
                 while (accumulator >= TICK_STEP) {
                     game.tick();
                     accumulator -= TICK_STEP;
                     window.clear();
                     GameState gamestate(W, H);
                     gamestate.copyGame(game, game.getPlayer1().getColor(), game.getPlayer2().getColor());
-
                     // std::vector<std::vector<ComponentInfo>> voronoi = Bot2::VoronoiDiagram(gamestate);
+                    // std::vector<std::vector<bool>> isAP = Bot5::findArticulationPoint(gamestate);
+                    // double space = Bot5::calculateTreeOfChamber(gamestate, false);
+
                     Map &map = game.getMap();
                     sf::RectangleShape rect({renderBlockSizeW, renderBlockSizeH});
                     for (int i = 0; i < W; ++i) {
@@ -145,6 +156,9 @@ public:
                             //     color = map.getTileColor(map.getTile({i, j}).tileColor);
                             // }
                             color = map.getTileColor(map.getTile({i, j}).tileColor);
+                            // if (isAP[i][j]) {
+                            //     color = map.getTileColor(GREY);
+                            // }
                             rect.setFillColor(color);
                             rect.setOutlineThickness(1.f);
                             rect.setOutlineColor(sf::Color(0,0,0));
@@ -169,7 +183,7 @@ public:
 
 
             //game over
-            if (game.getTerminateCode() != 0) {
+            if (game.getTerminateCode() != 0 && !paused) {
                 if (!resultCount) {
                     if (game.getTerminateCode() == 1) {
                         ++draw;

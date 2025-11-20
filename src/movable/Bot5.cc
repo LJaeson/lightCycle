@@ -23,6 +23,10 @@ BotPlayingReturn Bot5::getMove(const Game &game, TileColor color1, TileColor col
 
     if (tempGameState->bot.location.equal({-1, -1}) || tempGameState->oponent.location.equal({-1, -1})) return {Direction::DOWN, 0, clock.getElapsedTime().asMilliseconds()};
     
+    if (!areInSameComponent(*tempGameState)) {
+        return getMoveEndGame(*tempGameState, clock);
+    }
+
     int position = 0;
     Direction bestMove = Direction::DOWN;
 
@@ -34,9 +38,6 @@ BotPlayingReturn Bot5::getMove(const Game &game, TileColor color1, TileColor col
     for (Direction dir: moveOrdering(tempGameState->bot)) {
         if (tempGameState->getCrashed(tempGameState->bot.findNextLocationFromDirection(dir))) {
             continue;
-        }
-        if (exceedTimeLimit(clock)) {
-            return {bestMove, position, clock.getElapsedTime().asMilliseconds()};
         }
         tempGameState->move(tempGameState->bot, dir);
         double eval = minimax(MAX_DEPTH, false, clock, position, alpha, beta);
@@ -87,7 +88,7 @@ std::vector<Direction> Bot5::moveOrdering(Position pos) {
         // Manhattan dist to the center
         Location center = { w/2, h/2 };
         int dist = std::abs(newL.w - center.w) + std::abs(newL.h - center.h);
-        double decayFactor = 0.80;
+        double decayFactor = 0.97;
         double f = 0.4;
         for (int i = 0; i < numMove; ++i) {
             f *= decayFactor;
@@ -460,3 +461,138 @@ int Bot5::floodFillAlgorithm(GameState &game, std::vector<std::vector<bool>> &vi
 
     return space;
 }
+
+double Bot5::simpleEvaluate() {
+    if (isDraw()) {
+        return -500; // draw
+    } else if (tempGameState->getCrashed(tempGameState->bot.location)) {
+        return -100000; // oponent win
+    } else if (tempGameState->getCrashed(tempGameState->oponent.location)) {
+        return 100000; // the bot (us) win
+    }
+    int w = tempGameState->w;
+    int h = tempGameState->h;
+    std::vector<std::vector<bool>> visited(w, std::vector<bool>(h, 0));
+    return floodFillAlgorithm(*tempGameState, visited, tempGameState->bot.location) * 100;
+}
+
+double Bot5::simpleMinimax(sf::Clock &clock, int depth, int &position) {
+    if (isTerminal() || depth == 0 || exceedTimeLimit(clock)) {
+        return simpleEvaluate();
+    }
+    ++position;
+    double maxEval = -std::numeric_limits<double>::infinity();
+
+    for (Direction dir : moveOrdering(tempGameState->bot)) {
+        tempGameState->move(tempGameState->bot, dir);
+        maxEval = std::max(maxEval, simpleMinimax(clock, depth - 1, position));
+        tempGameState->unmove();
+    }
+
+    return maxEval;
+}
+
+BotPlayingReturn Bot5::getMoveEndGame(GameState &game, sf::Clock &clock) {
+    
+    int position = 0;
+
+    Direction bestMove = DOWN;
+
+    double maxEval = -std::numeric_limits<double>::infinity();
+
+    for (Direction dir : moveOrdering(game.bot)) {
+        game.move(game.bot, dir);
+        double eval = simpleMinimax(clock, MAX_DEPTH, position);
+        game.unmove();
+        if (eval > maxEval) {
+            maxEval = eval;
+            bestMove = dir;
+        }
+    }
+    return {bestMove, position, clock.getElapsedTime().asMilliseconds()};
+}
+
+    // Location start = game.bot.location;
+
+    // Position pos = {start, DOWN};
+
+    // Direction bestMove = DOWN;
+    // double bestScore = 0;
+
+
+    // for (Direction dir : {UP, DOWN, LEFT, RIGHT}) {
+    //     double score = 0;
+    //     Location next = pos.findNextLocationFromDirection(dir);
+
+    //     if (game.getCrashed(next)) continue;
+
+    //     std::vector<std::vector<bool>> visited(game.w, std::vector<bool>(game.h, 0));
+        
+    //     game.move(pos, dir);
+
+    //     score += floodFillAlgorithm(game, visited, next);
+
+    //     game.unmove();
+
+    //     score -= getNeighbours(game, next).size();
+
+    //     if (score > bestScore) {
+    //         bestMove = dir;
+    //         bestScore = score;
+    //     }
+    // }
+
+    // return {bestMove, 1, clock.getElapsedTime().asMilliseconds()};
+
+///////////////////// HAMILTONIAN PATH ///////////////////////////
+// int w = game.w;
+    // int h = game.h;
+    
+    // std::vector<std::vector<std::pair<Location, Direction>>> pred(w, std::vector<std::pair<Location, Direction>>(h, { {-1, -1}, DOWN }));
+    // std::vector<std::vector<int>> dist(w, std::vector<int>(h, -1));
+
+    // std::queue<Location> bfsQueue;
+    // Location bot = game.bot.location;
+
+    // dist[bot.w][bot.h] = 0;
+
+    // bfsQueue.push(bot);
+    // Location bestL = bot;
+    // int maxDist = 0;
+
+    // while (!bfsQueue.empty()) {
+    //     Location u = bfsQueue.front();
+    //     bfsQueue.pop();
+
+    //     int d = dist[u.w][u.h];
+    
+    //     if (d > maxDist) {
+    //         bestL = u;
+    //         maxDist = d;
+    //     }
+
+    //     Position pos = {u, DOWN};
+    
+    //     for (Direction i : { UP, DOWN, RIGHT, LEFT }) {
+    //         Location next = pos.findNextLocationFromDirection((Direction) i);
+
+    //         if (game.getCrashed(next)) continue;
+
+    //         if (dist[next.w][next.h] != -1) continue;
+
+    //         dist[next.w][next.h] = d + 1;
+
+    //         pred[next.w][next.h] = {u, (Direction) i};
+
+    //         bfsQueue.push(next);
+    //     }
+    // }
+    // if (maxDist == 0) {
+    //     return {DOWN, 1, clock.getElapsedTime().asMilliseconds()};
+    // }
+
+    // while (dist[bestL.w][bestL.h] != 1) {
+    //     bestL = pred[bestL.w][bestL.h].first;
+    // }
+
+    // return {pred[bestL.w][bestL.h].second, 1, clock.getElapsedTime().asMilliseconds()};

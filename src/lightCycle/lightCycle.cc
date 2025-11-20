@@ -19,7 +19,7 @@ private:
     bool paused = false;
 
     const int H = 15;
-    const int W = 21;
+    const int W = 15;
 
     const unsigned int winW = 1000;
     const unsigned int winH = 800;

@@ -12,9 +12,9 @@
 Game::Game(int w, int h, Location p1Start, Location p2Start)
     : tickQueue{}, 
 
-    // p1(new Player(p1Start, TileColor::BLUE)),
-    p1(new Bot5(p1Start, {w, h}, TileColor::BLUE)),
-    p2(new Bot2(p2Start, {w, h}, TileColor::GREEN)),
+    p1(new Player(p1Start, TileColor::BLUE)),
+    // p1(new Bot5(p1Start, {w, h}, TileColor::BLUE)),
+    p2(new Bot5(p2Start, {w, h}, TileColor::GREEN)),
     map{w,h} 
     {
         map.createRandomWall();

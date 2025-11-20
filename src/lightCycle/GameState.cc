@@ -17,8 +17,6 @@ void GameState::copyGame(const Game &game, TileColor botColor, TileColor opColor
     bot.initPosition(0, 0);
     oponent.initPosition(0, 0);
     MapTypes::Grid gameMap = game.getMapGrid();
-    std::cout << w << std::endl;
-    std::cout << h << std::endl;
     for (int i = 0; i < w; ++i) {
         for (int j = 0; j < h; ++j) {
             TileColor c = gameMap[i][j].tileColor;

@@ -66,4 +66,10 @@ public:
     static int floodFillAlgorithm(GameState &game, std::vector<std::vector<bool>> &visited, Location u);
 
     std::vector<Direction> moveOrdering(Position pos);
+
+    BotPlayingReturn getMoveEndGame(GameState &game, sf::Clock &clock);
+
+    double simpleEvaluate();
+
+    double simpleMinimax(sf::Clock &clock, int depth, int &position);
 };

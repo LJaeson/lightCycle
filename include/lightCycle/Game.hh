@@ -1,12 +1,10 @@
 #pragma once
-#include <lightCycle/lightCycle.hh>
+#include <functional>
 #include <lightCycle/Map.hh>
 #include <lightCycle/utility.hh>
 #include <movable/Player.hh>
-// #include <movable/Bot.hh>
+#include <memory>
 #include <iostream>
-
-class Bot;
 
 // #include <deque>
 // #include <iostream>
@@ -64,8 +62,8 @@ private:
     void botPlaying_();
 
 public:
-    void draw(sf::RenderTarget& window, int tileSize);
-    void drawPart(sf::RenderTarget& window, int tileSize, Location l);
+    void draw(sf::RenderTarget& window, int tileSizeW, int tileSizeH);
+    void drawPart(sf::RenderTarget& window, int tileSizeW, int tileSizeH, Location l);
 
     Map& getMap();
     Actor& getPlayer1();

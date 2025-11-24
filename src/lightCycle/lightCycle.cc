@@ -1,6 +1,8 @@
 #include <lightCycle/lightCycle.hh>
+#include <lightCycle/GameState.hh>
+#include <movable/Bot2.hh>
+#include <movable/Bot5.hh>
 #include <thread>
-
 
 const double BOT_LIMIT = 500.0;
 bool windowOpen = true;
@@ -12,8 +14,19 @@ private:
     double accumulator = 0.0;   //dont change
     const double TICK_STEP = 800.0;
 
-    const int H = 30;
-    const int W = 30;
+    int resultCount = false;
+
+    bool paused = false;
+
+    const int H = 15;
+    const int W = 15;
+
+    const unsigned int winW = 1000;
+    const unsigned int winH = 800;
+
+    const float renderBlockSizeW = (double) winW / W;
+    const float renderBlockSizeH = (double) winH / H;
+
     const unsigned int RenderBlockSize = 20;
 
     sf::RenderWindow window;
@@ -33,17 +46,14 @@ private:
     static bool windowOpen;
 public:
     GameController(): 
-    game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5,0}),
-    window(sf::VideoMode({RenderBlockSize * W, RenderBlockSize * H}), "Light Cycle"),
-    canvas({RenderBlockSize * W, RenderBlockSize * H})
+    game(W, H, Location{1, 0}, Location{W - 2,0}),
+    window(sf::VideoMode({winW, winH}), "Light Cycle"),
+    canvas({winW, winH})
     {};
-        
-
-    
 
     void playerInput(sf::Keyboard::Scancode key) {  // or sf::Keyboard::Scancode if you prefer
         // --- Player 1 (WASD)
-        if (game.getPlayer1().isPlayer()) {
+        if (game.getPlayer1().isPlayer() && !paused) {
             if (key == sf::Keyboard::Scancode::W) game.getPlayer1().changeDirection(Direction::UP);
             else if (key == sf::Keyboard::Scancode::A) game.getPlayer1().changeDirection(Direction::LEFT);
             else if (key == sf::Keyboard::Scancode::S) game.getPlayer1().changeDirection(Direction::DOWN);
@@ -51,7 +61,7 @@ public:
         }
 
         // --- Player 2 (Arrow keys)
-        if (game.getPlayer2().isPlayer()) {
+        if (game.getPlayer2().isPlayer() && !paused) {
             if (key == sf::Keyboard::Scancode::Up) game.getPlayer2().changeDirection(Direction::UP);
             else if (key == sf::Keyboard::Scancode::Left) game.getPlayer2().changeDirection(Direction::LEFT);
             else if (key == sf::Keyboard::Scancode::Down) game.getPlayer2().changeDirection(Direction::DOWN);
@@ -59,24 +69,34 @@ public:
         }
 
         // --- Restart game
-        if (key == sf::Keyboard::Scancode::Space && game.getTerminateCode() != 0) {
-            game = Game(W, H, Location{2 * W / 5, 0}, Location{3 * W / 5, 0}); 
-            clock.restart();
-            accumulator = 0.0;
-
-            std::cout << "Game restarted" << std::endl;
-            canvas.clear();
-            game.draw(canvas, RenderBlockSize);
-            canvas.display();
+        if (key == sf::Keyboard::Scancode::Space) {
+            if (game.getTerminateCode() != 0 && !paused) {
+                gameRestart();
+            } else {
+                paused = paused ? false : true;
+            }
         }
     }
 
+    void gameRestart() {
+        game = Game(W, H, Location{1, 0}, Location{W - 2, 0}); 
+        clock.restart();
+        accumulator = 0.0;
 
-    void run () {
+        std::cout << "Game restarted" << std::endl;
+        canvas.clear();
+        game.draw(canvas, renderBlockSizeW, renderBlockSizeH);
+        canvas.display();
+
+        resultCount = false;
+    }
+
+    // Win, draw and loss from player 1 perspective.
+    void run(bool autoPlay, int numIter, int &win, int &loss, int &draw) {
         window.setFramerateLimit(60);
 
         canvas.clear();
-        game.draw(canvas, RenderBlockSize);
+        game.draw(canvas, renderBlockSizeW, renderBlockSizeH);
         canvas.display();
 
         while (window.isOpen()) {
@@ -106,52 +126,107 @@ public:
 
             //game tick and graphic handle
             float delta = clock.restart().asMilliseconds();
-            accumulator += delta;
+            if (!paused) {
+                accumulator += delta;
+            }
 
-            if (game.getTerminateCode() == 0) {
+            if (game.getTerminateCode() == 0 && !paused) {
                 while (accumulator >= TICK_STEP) {
                     game.tick();
                     accumulator -= TICK_STEP;
+                    window.clear();
+                    GameState gamestate(W, H);
+                    gamestate.copyGame(game, game.getPlayer1().getColor(), game.getPlayer2().getColor());
+                    // std::vector<std::vector<ComponentInfo>> voronoi = Bot2::VoronoiDiagram(gamestate);
+                    // std::vector<std::vector<bool>> isAP = Bot5::findArticulationPoint(gamestate);
+                    // double space = Bot5::calculateTreeOfChamber(gamestate, false);
 
-                    while (game.haveLocationTask()) {
-                        game.drawPart(canvas, RenderBlockSize, game.getLocationQ());
+                    Map &map = game.getMap();
+                    sf::RectangleShape rect({renderBlockSizeW, renderBlockSizeH});
+                    for (int i = 0; i < W; ++i) {
+                        for (int j = 0; j < H; ++j) {
+                            sf::Color color;
+                            // int owner = voronoi[i][j].owner;
+                            // int dist = voronoi[i][j].distToNearestPlayer;
+                            // if (owner == BOT_OWNER && dist != 0) {
+                            //     color = map.getTileColor(LIGHTBLUE);
+                            // } else if (owner == OPP_OWNER && dist != 0) {
+                            //     color = map.getTileColor(LIGHTGREEN);
+                            // } else {
+                            //     color = map.getTileColor(map.getTile({i, j}).tileColor);
+                            // }
+                            color = map.getTileColor(map.getTile({i, j}).tileColor);
+                            // if (isAP[i][j]) {
+                            //     color = map.getTileColor(GREY);
+                            // }
+                            rect.setFillColor(color);
+                            rect.setOutlineThickness(1.f);
+                            rect.setOutlineColor(sf::Color(0,0,0));
+                            rect.setPosition(sf::Vector2f(i * renderBlockSizeW, j * renderBlockSizeH));
+                            window.draw(rect);
+                        }
+                        // std::cout << std::endl;
                     }
-                    canvas.display();
+                    // std::cout << std::endl;
+                    
+                    // while (game.haveLocationTask()) {
+                    //     game.drawPart(canvas, renderBlockSizeW, renderBlockSizeH, game.getLocationQ());
+                    // }
+                    // canvas.display();
                 }
 
             }
 
-            window.clear();
-            sf::Sprite frame(canvas.getTexture());
-            window.draw(frame);
+            // window.clear();
+            // sf::Sprite frame(canvas.getTexture());
+            // window.draw(frame);
 
 
             //game over
-            if (game.getTerminateCode() != 0) {
-
-                sf::Text text(uiFont);
-                text.setCharacterSize(50);
-                text.setFillColor(sf::Color::White);
-
-                switch (game.getTerminateCode()) {
-                    case 1: text.setString("Draw! Press SPACE to restart"); break;
-                    case 2: text.setString("Player 2 Wins! Press SPACE to restart"); break;
-                    case 3: text.setString("Player 1 Wins! Press SPACE to restart"); break;
+            if (game.getTerminateCode() != 0 && !paused) {
+                if (!resultCount) {
+                    if (game.getTerminateCode() == 1) {
+                        ++draw;
+                    } else if (game.getTerminateCode() == 2) {
+                        ++loss;
+                    } else if (game.getTerminateCode() == 3) {
+                        ++win;
+                    }
+                    resultCount = true;
                 }
 
-                //central the text
-                sf::FloatRect bounds = text.getLocalBounds();
-                text.setOrigin(
-                    {bounds.position.x + bounds.size.x / 2.f,
-                    bounds.position.y + bounds.size.y / 2.f}
-                );
-                auto size = window.getSize();
-                text.setPosition(
-                    {static_cast<float>(size.x) / 2.f,
-                    static_cast<float>(size.y) / 2.f}
-                );
+                if (autoPlay) {
+                    --numIter;
+                    if (numIter == 0) {
+                        return;
+                    }
+                    gameRestart();
+                
+                } else {
+                    sf::Text text(uiFont);
+                    text.setCharacterSize(50);
+                    text.setFillColor(sf::Color::Red);
 
-                window.draw(text);
+                    switch (game.getTerminateCode()) {
+                        case 1: text.setString("Draw! Press SPACE to restart"); break;
+                        case 2: text.setString("Player 2 Wins! Press SPACE to restart"); break;
+                        case 3: text.setString("Player 1 Wins! Press SPACE to restart"); break;
+                    }
+
+                    //central the text
+                    sf::FloatRect bounds = text.getLocalBounds();
+                    text.setOrigin(
+                        {bounds.position.x + bounds.size.x / 2.f,
+                        bounds.position.y + bounds.size.y / 2.f}
+                    );
+                    auto size = window.getSize();
+                    text.setPosition(
+                        {static_cast<float>(size.x) / 2.f,
+                        static_cast<float>(size.y) / 2.f}
+                    );
+
+                    window.draw(text);
+                }
             }
 
             window.display();
@@ -180,7 +255,10 @@ int main(int argc, char* argv[]) {
     std::string path = (exeDir / "resources" / "MinecraftRegular.otf").string();
     controller.loadGameFont(path);
 
-    controller.run();
+    int win = 0, draw = 0, loss = 0;
+    controller.run(true, 100, win, loss, draw);
+
+    std::cout << "Win: " << win << ", Loss: " << loss << ", Draw: " << draw << std::endl;
 
     return 0;
 }

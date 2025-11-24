@@ -14,6 +14,8 @@
 #include <movable/Bot.hh>
 #include <lightCycle/Game.hh>
 // #include <lightCycle/Map.hh>
+#include <queue>
+#include <mutex>
 #include <lightCycle/utility.hh>
 
 

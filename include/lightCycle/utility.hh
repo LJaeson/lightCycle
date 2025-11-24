@@ -5,7 +5,10 @@ enum TileColor {
     GREEN,
     BLUEACTOR,
     GREENACTOR,
-    BOUNDARY
+    BOUNDARY,
+    LIGHTBLUE,
+    LIGHTGREEN,
+    GREY
 };
 
 //     1
@@ -33,6 +36,12 @@ struct Location {
 
     bool equal(Location l) {
         return (w == l.getW()) && (h == l.getH());
+    }
+
+    // Comparison operator for use in std::set
+    bool operator<(const Location &other) const {
+        if (w != other.w) return w < other.w;
+        return h < other.h;
     }
 };
 
@@ -69,6 +78,10 @@ struct Position {
 
     Location findPreLocation() const {
         return Location{location.w - dw[direction], location.h - dh[direction]};
+    }
+
+    Location findNextLocationFromDirection(Direction d) {
+        return Location{location.w + dw[d], location.h + dh[d]};
     }
 
     void doNextLocation() {

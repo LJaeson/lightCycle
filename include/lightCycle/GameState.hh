@@ -3,8 +3,6 @@
 #include <lightCycle/Game.hh>
 #include <stack>
 
-class Bot;
-
 struct Move {
     Position *pos;
     Direction dir;
@@ -28,6 +26,7 @@ class GameState {
         
         bool getCrashed(Location l);
 
+        std::vector<Direction> getMove(Position &pos);
         std::vector<Direction> getPossibleMove(Position &pos);
 
         void move(Position &pos, Direction dir);

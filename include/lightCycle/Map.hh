@@ -4,7 +4,7 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <deque>
 // #include <lightCycle/Map.hh>
-
+#include <vector>
 #include <lightCycle/utility.hh>
 
 // ---------- Tile ----------
@@ -28,6 +28,7 @@ public:
     void addLocation(Location l);
     bool haveLocationTask() const;
     Location getLocationQ();
+    int size() { return location_task_.size(); }
 };
 
 class Map {
@@ -38,19 +39,20 @@ private:
     int W;
     int H;
 
-    sf::Color getTileColor(TileColor tileColor) const;
+    
 
 
 public:
     Map(int w, int h);
 
-    void draw(sf::RenderTarget& window, int tileSize);
-    void drawPart(sf::RenderTarget& window, int tileSize, Location loc);
+    void draw(sf::RenderTarget& window, int tileSizeW, int tileSizeH);
+    void drawPart(sf::RenderTarget& window, int tileSizeW, int tileSizeH, Location loc);
 
     MapTypes::Grid getMap() const;
     Tile& getTile(int w, int h);
     Tile& getTile(Location l);
 
+    sf::Color getTileColor(TileColor tileColor) const;
     void addLocation(Location l);
     bool haveLocationTask();
     Location getLocationQ();

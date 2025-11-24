@@ -9,7 +9,8 @@ Actor::Actor(Location l, TileColor ac) {
 }
 
 bool Actor::isDead(Map& map) {
-    return map.getTile(position.location).tileColor != NOPE;
+    TileColor tileColor = map.getTile(position.location).tileColor;
+    return tileColor != NOPE;
 }
 
 void Actor::changeTileBehind(Map& map) {
@@ -20,6 +21,10 @@ void Actor::changeTileBehind(Map& map) {
 void Actor::changeCurrentTile(Map& map) {
     map.getTile(position.location).changeTileColor(actorColor);
     map.addLocation(position.location);
+}
+
+bool Actor::equalLocation(Actor &a) {
+    return position.location.equal(a.position.location);
 }
 
 void Actor::doNextLocation() { position.doNextLocation(); }
